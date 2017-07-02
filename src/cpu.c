@@ -16,8 +16,6 @@
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ************************************************************************/
 
-#include <stdio.h>
-#include <stdlib.h>
 #include "cpu.h"
 #include "memory.h"
 #include "video.h"
@@ -271,20 +269,17 @@ void trash_OAM( void )
 
 void UNDEF( void )
 {
-  printf("Undefined opcode %02X at address %04X\n", state.op, state.pc);
   exit(1);
 }
 
 void UNDEF_CB( void )
 {
-  uint8_t data = read_byte(state.pc+1);
-  printf("Undefined CB-prefixed opcode %02X at address %04X\n", data, state.pc);
+  read_byte(state.pc+1);
   exit(1);
 }
 
 void LOCKUP( void )
 {
-  printf("LOCKUP opcode %02X at address %04X\n", state.op, state.pc);
   exit(1);
 }
 
@@ -525,7 +520,6 @@ void RRCA( void )
 void STOP( void )
 {
   // opcode 10
-  printf("STOP\n");
 //   state.halt = 1;
   if(state.key1 & 0x01)
   {
@@ -678,7 +672,6 @@ uint8_t* cpu_getReg( int regNumber )
       break;
     default:
       // danger danger
-      printf("Register decode error: %d\n", regNumber);
       return &(state.a);
       break;
   }
@@ -1836,7 +1829,6 @@ void RET_CC( void)
       }
       break;
     default:
-      fprintf(stderr, "ERROR: RET_CC decode error, pc: %04X\n", state.pc);
       exit(1);
   }
   
@@ -3260,7 +3252,6 @@ uint8_t cpu_get_flags_register( void )
         temp |= FLAGS_N;
     if( ISSET_Z() )
         temp |= FLAGS_Z;
-    printf( "cpu_get_flags_register: Z:%d N:%d H:%d C:%d %02x\n", ISSET_Z(), ISSET_N(), ISSET_H(), ISSET_C(), temp );
     return temp;
 }
 
@@ -3286,7 +3277,6 @@ void cpu_set_flags_register( uint8_t flags )
     else
         RESET_Z();
     
-    printf( "cpu_set_flags_register: Z:%d N:%d H:%d C:%d %02x\n", ISSET_Z(), ISSET_N(), ISSET_H(), ISSET_C(), flags );
 }
 
 void cpu_do_one_frame()
@@ -3340,8 +3330,6 @@ void cpu_do_one_instruction()
         }
       if(state.pending_stat_interrupts == 0)
         state.iflag &= ~IMASK_LCD_STAT;
-      else
-        printf("NOT clearing LCD STAT interrupt\n");
       state.sp -= 2;
       write_word(state.sp, state.pc);
       state.pc = 0x0048;

@@ -16,8 +16,6 @@
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ************************************************************************/
 
-#include <stdio.h>
-#include <stdlib.h>
 #include "types.h"
 #include "memory.h"
 #include "cpu.h"
@@ -91,14 +89,12 @@ void mem_init( void ) {
 // nothing
 uint8_t read_nothing( uint16_t address ) {
   // TODO
-  printf("Unimplemented memory read at address %04X, pc: %04X\n", address, state.pc);
   exit(1);
   return 0;
 }
 
 void write_nothing( uint16_t address, uint8_t data ) {
   // TODO
-  printf("Unimplemented memory write at address %04X, pc: %04X\n", address, state.pc);
   exit(1);
 }
 
@@ -369,7 +365,6 @@ uint8_t read_special( uint16_t address ) {
       break;
     case ADDR_RP:
       // TODO
-      printf("Read IR port\n");
       return 0;
       break;
     case ADDR_BGPI:
@@ -431,7 +426,6 @@ void write_special( uint16_t address, uint8_t data ) {
       }
       break;
     case ADDR_CBOY:
-      printf("CBOY: %02X\n", data);
       break;
     case ADDR_DIV:
       state.div = data;
@@ -571,11 +565,9 @@ void write_special( uint16_t address, uint8_t data ) {
       state.wy = data;
       break;
     case ADDR_CAPS:
-      printf("Wrote CAPS: %02X\n", data);
       state.caps = data;
       break;
     case ADDR_KEY1:
-      printf("Wrote KEY1: %02X\n", data);
       state.key1 = (state.key1&0xFE) | (data&0x01);
       break;
     case ADDR_VBK:
@@ -610,7 +602,6 @@ void write_special( uint16_t address, uint8_t data ) {
 	int source = state.hdma_source & 0xFFF0;
 	int dest = 0x8000 + (state.hdma_destination & 0x1FF0);
         int length = state.hdma5 & 0x7F;
-	printf("general HDMA: source=%04X, dest=%04X, length=%02X\n", source, dest, length);
 	
 	int i;
 	for(i=0; i<(length+1)*16; ++i)
@@ -625,16 +616,11 @@ void write_special( uint16_t address, uint8_t data ) {
       {
 	// h-blank DMA
       // TODO
-        int source = state.hdma_source & 0xFFF0;
-        int dest = 0x8000 + (state.hdma_destination & 0x1FF0);
-        int length = state.hdma5 & 0x7F;
-        printf("h-blank HDMA: source=%04X, dest=%04X, length=%02X\n", source, dest, length);
 // 	state.hdma5 &= 0x7F;
       }
       break;
     case ADDR_RP:
       // TODO
-      printf("Wrote IR port: %02X\n", data);
       break;
     case ADDR_BGPI:
       state.bgpi = data;
@@ -678,13 +664,12 @@ void write_special( uint16_t address, uint8_t data ) {
 // out of bounds - results in a crash
 uint8_t read_out_of_bounds( uint16_t address )
 {
-  fprintf( stderr, "Out-of-bounds read, address: %04X, pc: %04X\n", address, state.pc );
   exit(1);
+  return 0;
 }
 
 void write_out_of_bounds( uint16_t address, uint8_t data )
 {
-  fprintf( stderr, "Out-of-bounds write, address: %04X, pc: %04X\n", address, state.pc );
   exit(1);
 }
 

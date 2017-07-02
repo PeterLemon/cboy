@@ -25,6 +25,7 @@
 #include "cart.h"
 #include "main.h"
 #include "audio.h"
+#include "libc.h"
 
 int stop = 0;
 int pause = 0;
@@ -43,7 +44,7 @@ struct command {
     int end;    // 0 (default) for commands, 1 for end-of-array sentinel
 };
 void print_usage();
-int cmd_run(int, char**);
+int main(int, char**);
 int cmd_help(int, char**);
 int cmd_exit(int, char**);
 int cmd_info(int, char**);
@@ -57,7 +58,7 @@ struct command cmds[] = {
     },
     {
         .name = "run",
-        .func = cmd_run,
+        .func = main,
         .help_short = "Run a Game Boy ROM in the emulator.",
         .help_long = "run <romfile>\n\trun romfile in the Game Boy emulator",
     },
@@ -91,49 +92,19 @@ int get_cmd_index_for_name( char *needle )
     return -1;
 }
 
-int main( int argc, char *argv[] )
-{
-    if( argc < 2 )
-    {
-        print_usage();
-        return 1;
-    }
-
-    char *exe_name = argv[0];
-    char *command_name = argv[1];
-    int cmd_index = get_cmd_index_for_name( command_name );
-    if( cmd_index == -1 )
-    {
-        printf( "%s: '%s' is not a command.\n", exe_name, command_name );
-        return 1;
-    }
-    else
-    {
-        return cmds[cmd_index].func( argc, argv );
-    }
-}
-
 void print_usage()
 {
-    printf( "usage: cboy <command> <[args]>\n"
-            "\n"
-            "The available commands are:\n" );
     int cmds_index=0;
     while( !cmds[cmds_index].end )
     {
-        printf( "\t%s\t%s\n", cmds[cmds_index].name, cmds[cmds_index].help_short);
         cmds_index++;
     }
-
-    printf( "\n"
-            "See 'cboy help <command>' to read about a specific command.\n" );
 }
 
 int cmd_help( int argc, char *argv[] )
 {
     if( argc < 3 )
     {
-        fprintf( stderr, "usage: cboy help <command>\n" );
         return 1;
     }
 
@@ -143,31 +114,22 @@ int cmd_help( int argc, char *argv[] )
     {
         if( !strcmp( cmds[cmds_index].name, command_name ) )
         {
-            printf( "%s\n", cmds[cmds_index].help_long );
             return 0;
         }
         cmds_index++;
     }
-    printf( "No command %s\n", command_name );
     return 1;
 }
 
-int cmd_run( int argc, char *argv[] )
+int main( int argc, char *argv[] )
 {
-    if( argc < 3 )
-    {
-        fprintf( stderr, "usage: cboy run <romfile>\n" );
-        return 1;
-    }
-
     mem_init();
     audio_init();
     if( !cpu_init() )
     {
-        fprintf( stderr, "cpu init failed\n" );
         return 1;
     }
-    cart_init( NULL, argv[2] );
+    cart_init( NULL, NULL );
     vid_init();
     input_init();
     while( !stop )

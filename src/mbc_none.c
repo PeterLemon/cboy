@@ -19,7 +19,6 @@
 #include "memory.h"
 #include "cart.h"
 #include "mbc_none.h"
-#include <stdio.h>
 
 
 void mbc_none_install()

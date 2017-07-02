@@ -19,7 +19,6 @@
 #include "memory.h"
 #include "cart.h"
 #include "mbc_mbc5.h"
-#include <stdio.h>
 
 void mbc_mbc5_install()
 {
@@ -156,8 +155,6 @@ void mbc_mbc5_write_ram_bank_select( uint16_t address, uint8_t data )
     case 0x1C:  // MBC5+RUMBLE
     case 0x1D:  // MBC5+RUMBLE+RAM
     case 0x1E:  // MBC5+RUMBLE+RAM+BATTERY
-      if( data & 0x08 )
-        printf( "rumble ON, power: %d\n", data >> 4 );
       break;
     default:
       break;

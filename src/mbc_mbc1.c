@@ -19,7 +19,6 @@
 #include "memory.h"
 #include "cart.h"
 #include "mbc_mbc1.h"
-#include <stdio.h>
 
 uint8_t mbc1_bank_low; // bits 0-4
 uint8_t mbc1_bank_high;  // bit 5-6 (stored in bits 0-1)

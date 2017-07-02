@@ -19,7 +19,6 @@
 #include "memory.h"
 #include "cart.h"
 #include "mbc_cam.h"
-#include <stdio.h>
 
 int cam_mode;   // 0=RAM accessible, 1=CAM registers accessible
 

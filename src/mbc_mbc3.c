@@ -19,8 +19,6 @@
 #include "memory.h"
 #include "cart.h"
 #include "mbc_mbc3.h"
-#include <stdio.h>
-#include <time.h>
 
 void mbc_mbc3_install()
 {
@@ -163,7 +161,6 @@ void mbc_mbc3_write_ram_bank_select( uint16_t address, uint8_t data ) {
       }
       break;
     default:
-      printf("Switching to invalid extram bank %02X \n", data );
       break;
   }
 }

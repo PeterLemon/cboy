@@ -20,7 +20,6 @@
 #define _INPUT_H_
 
 #include "types.h"
-#include <SDL.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -38,7 +37,6 @@ extern "C" {
 #define INPUT_DIRECTIONS_RIGHT	0x01
 
 void input_init();
-int input_event_filter(void *dontcare, SDL_Event *event);
 void input_handle();
 
 #ifdef __cplusplus

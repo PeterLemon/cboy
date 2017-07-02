@@ -19,7 +19,7 @@
 #ifndef _TYPES_H_
 #define _TYPES_H_
 
-#include <stdint.h>
+#include "libc.h"
 
 typedef uint16_t pc_t;
 typedef uint16_t address_t;

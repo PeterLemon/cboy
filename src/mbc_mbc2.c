@@ -19,7 +19,6 @@
 #include "memory.h"
 #include "cart.h"
 #include "mbc_mbc2.h"
-#include <stdio.h>
 
 void mbc_mbc2_install()
 {

@@ -16,15 +16,11 @@
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ************************************************************************/
 
-#include <stdio.h>
-#include <sys/stat.h>
 #include "cart.h"
 #include "memory.h"
-#include <stdlib.h> // for exit
 #include "mbc.h"
 #include "cartdesc.h"
 #include "cpu.h"
-#include <string.h>
 #include "bootrom.h"
 
 struct cart_s cart;
@@ -37,7 +33,7 @@ char* romname2savename( char* savename, char* romname, int savenamelength )
     return NULL;
   }
   
-  char* suffix = strrchr( romname, (int)'.' );
+  const char* suffix = strrchr( romname, (int)'.' );
   
   if( suffix == NULL )
   {
@@ -70,15 +66,7 @@ char* romname2savename( char* savename, char* romname, int savenamelength )
 
 void cart_init( char* bootromName, char* cartromName )
 {
-  // stat the cartrom to see if it's a file,
-  // or a character device.
-  struct stat s;
-  if( stat( cartromName, &s ) != 0 )
-  {
-    printf("Couldn't stat cartrom %s\n", cartromName);
-    exit(1);
-  }
-  cart_init_file(bootromName, cartromName);
+  cart_init_file(bootromName, "n64chain");
 }
 
 void cart_init_file( char* bootromName, char* cartromName ) {
@@ -122,25 +110,13 @@ void cart_init_file( char* bootromName, char* cartromName ) {
       cart.extram_size = 32768;
       break;
   }
-  
+  uint8_t extram[131072];
+  uint8_t extramValidRead[131072];
+  uint8_t extramValidWrite[131072];
   // allocate memory for extram
-  if( (cart.extram = (uint8_t *)malloc(cart.extram_size)) == NULL )
-  {
-    fprintf( stderr, "Extram malloc failed.\n" );
-    exit(1);
-  }
-  // allocate memory for extram cache validity thing - read
-  if( (cart.extramValidRead = (uint8_t *)malloc(cart.extram_size)) == NULL )
-  {
-    fprintf( stderr, "Extram malloc failed.\n" );
-    exit(1);
-  }
-  // allocate memory for extram cache validity thing - read
-  if( (cart.extramValidWrite = (uint8_t *)malloc(cart.extram_size)) == NULL )
-  {
-    fprintf( stderr, "Extram malloc failed.\n" );
-    exit(1);
-  }
+  cart.extram = extram;
+  cart.extramValidRead = extramValidRead;
+  cart.extramValidWrite = extramValidWrite;
   
   // determine whether the extram (if any) is battery-backed
   switch( cart.mbc_type )
@@ -172,7 +148,6 @@ void cart_init_file( char* bootromName, char* cartromName ) {
     {
       if( 1 != fread( cart.extram, cart.extram_size, 1, f ) )
       {
-        fprintf( stderr, "Couldn't read save file.\n" );
         exit(1);
       }
       fclose( f );
@@ -185,43 +160,21 @@ void cart_init_file( char* bootromName, char* cartromName ) {
 
 void cart_init_cartrom( char* cartromName )
 {
-  struct stat sb;
-  FILE *fd;
-  // Load the cart rom.
-  // First, find its filesize.
-  if( stat( cartromName, &sb) == -1 )
-  {
-    fprintf( stderr, "Couldn't find cart rom: %s.\n", cartromName );
-    exit(1);
-  }
-  
-  if( sb.st_size > MAX_CARTROM_SIZE )
+  extern uint8_t __cartrom[];
+  extern const unsigned __cartrom_size;
+
+  if( __cartrom_size > MAX_CARTROM_SIZE )
     cart.cartromsize = MAX_CARTROM_SIZE;
   else
-    cart.cartromsize = sb.st_size;
-  
-  // Allocate memory for the cartrom.
-  if( (cart.cartrom = (uint8_t *)malloc(cart.cartromsize)) == NULL )
-  {
-    fprintf( stderr, "Cart rom malloc failed.\n" );
-    exit(1);
-  }
-  
+    cart.cartromsize = __cartrom_size;
+ 
   // Read the cartrom.
-  //printf( "Loading cart rom: %s\n", cartromName );
-  fd = fopen( cartromName, "r" );
-  if( fread( cart.cartrom, cart.cartromsize, 1, fd ) != 1 )
-  {
-    fprintf( stderr, "Reading cart rom failed.\n" );
-    exit(1);
-  }
-  fclose( fd );
+  cart.cartrom = __cartrom;
   //printf( "Cart rom: %d bytes read.\n", cart.cartromsize );
   
   cart.cartrom_num_banks = cart.cartromsize / 16384;
   if( cart.cartromsize % 16384 != 0 )
   {
-    printf("Warning: cart rom not a multiple of 16384 bytes\n");
     cart.cartrom_num_banks++;
   }
   
@@ -231,44 +184,8 @@ void cart_init_cartrom( char* cartromName )
 
 void cart_init_bootrom( char* bootromName )
 {
-  if( bootromName == NULL )
-  {
-      cart.bootromsize = bootrom_bin_len;
-      cart.bootrom = (uint8_t *)bootrom_bin;
-      return;
-  }
-  struct stat sb;
-  FILE *fd;
-  // Load the boot rom.
-  // First, find its filesize.
-  if( stat( bootromName, &sb) == -1 )
-  {
-    fprintf( stderr, "Couldn't find boot rom: %s.\n", bootromName );
-    exit(1);
-  }
-  
-  if( sb.st_size > MAX_BOOTROM_SIZE )
-    cart.bootromsize = MAX_BOOTROM_SIZE;
-  else
-    cart.bootromsize = sb.st_size;
-  
-  // Allocate memory for the bootrom.
-  if( (cart.bootrom = (uint8_t *)malloc(cart.bootromsize)) == NULL )
-  {
-    fprintf( stderr, "Boot rom malloc failed.\n" );
-    exit(1);
-  }
-  
-  // Read the bootrom.
-  //printf( "Loading boot rom: %s\n", bootromName );
-  fd = fopen( bootromName, "r" );
-  if( fread( cart.bootrom, cart.bootromsize, 1, fd ) != 1 )
-  {
-    fprintf( stderr, "Reading boot rom failed.\n" );
-    exit(1);
-  }
-  fclose( fd );
-//   printf( "Boot rom: %d bytes read.\n", cart.bootromsize );
+  cart.bootromsize = bootrom_bin_len;
+  cart.bootrom = (uint8_t *)bootrom_bin;
 }
 
 /*
@@ -283,7 +200,6 @@ void cart_reset_mbc()
   
   if( state.bootRomEnabled )
   {
-    printf( "MBC reset: boot rom\n" );
     mbc_boot_install();
     return;
   }
@@ -336,12 +252,9 @@ void cart_reset_mbc()
       break;
     default:
       // danger danger
-      printf( "MBC reset: Unhandled cart type: %02Xh %s\n", cart.mbc_type, cartdesc_carttype[cart.mbc_type] );
       exit(1);
       break;
   }
-  
-  printf( "MBC reset: %02Xh %s\n", cart.mbc_type, cartdesc_carttype[cart.mbc_type] );
 }
   
 void cart_cleanup()
@@ -362,11 +275,9 @@ void cart_cleanup()
   }
   
   // free cartrom, bootrom, and extram
-  free( cart.cartrom );
   cart.cartrom = NULL;
   //free( cart.bootrom );
   cart.bootrom = NULL;
-  free( cart.extram );
   cart.extram = NULL;
 }
 

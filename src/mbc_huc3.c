@@ -19,7 +19,6 @@
 #include "memory.h"
 #include "cart.h"
 #include "mbc_huc3.h"
-#include <stdio.h>
 #include "cpu.h"
 
 int huc3_ram_mode = 0;
@@ -98,7 +97,6 @@ uint8_t mbc_huc3_read_ff( uint16_t address )
 
 void mbc_huc3_write_dummy( uint16_t address, uint8_t data )
 {
-  printf("write: pc:%04X, %04X:%02X\n", state.pc, address, data);
 }
 
 uint8_t mbc_huc3_read_bank_0( uint16_t address )
@@ -112,14 +110,12 @@ uint8_t mbc_huc3_read_bank_n( uint16_t address ) {
 
 // write 0000-1FFF
 void mbc_huc3_write_ram_enable( uint16_t address, uint8_t data ) {
-  printf("write: pc:%04X, %04X:%02X\n", state.pc, address, data);
   // TODO
   cart.huc3_ram_mode = data;
 }
 
 // write 2000-2FFF
 void mbc_huc3_write_rom_bank_select_low( uint16_t address, uint8_t data ) {
-  printf("write: pc:%04X, %04X:%02X\n", state.pc, address, data);
   cart.reg_rom_bank_low = data;
   int bank =  cart.reg_rom_bank_low + (int)(cart.reg_rom_bank_high)*256;
   
@@ -135,7 +131,6 @@ void mbc_huc3_write_rom_bank_select_low( uint16_t address, uint8_t data ) {
 
 // write 3000-3FFF
 void mbc_huc3_write_rom_bank_select_high( uint16_t address, uint8_t data ) {
-  printf("write: pc:%04X, %04X:%02X\n", state.pc, address, data);
   cart.reg_rom_bank_high = data & 0x01;
   int bank =  cart.reg_rom_bank_low + (int)(cart.reg_rom_bank_high)*256;
   
@@ -151,7 +146,6 @@ void mbc_huc3_write_rom_bank_select_high( uint16_t address, uint8_t data ) {
 
 // write 4000-40FF
 void mbc_huc3_write_ram_bank_select( uint16_t address, uint8_t data ) {
-  printf("write: pc:%04X, %04X:%02X\n", state.pc, address, data);
   if( cart.extram_size == 32768 )
   {
     int bank = data & 0x03;
@@ -176,13 +170,11 @@ uint8_t mbc_huc3_read_extram( uint16_t address ) {
       data = 0x01;
       break;
   }
-  printf("read: pc:%04X, %04X:%02X\n", state.pc, address, data);
   return data;
 }
 
 // write A000-BFFF
 void mbc_huc3_write_extram( uint16_t address, uint8_t data ) {
-  printf("write: pc:%04X, %04X:%02X\n", state.pc, address, data);
   cart.extram_bank[address&0x1fff] = data;
 }
 
