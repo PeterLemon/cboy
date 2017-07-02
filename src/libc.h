@@ -41,8 +41,7 @@ static inline void *memcpy(void *dest, const void *src, size_t n)
   return dest;
 }
 
-static inline char *strcat(char *dest, const char *src)
-{
+static inline char *strcat(char *dest, const char *src) {
   char *ret = dest;
   while (*dest)
     dest++;
@@ -66,8 +65,7 @@ static inline size_t strlen(const char *s) {
   return i;
 }
 
-static inline char *strncpy(char *dest, const char *src, size_t n)
-{
+static inline char *strncpy(char *dest, const char *src, size_t n) {
   char *ret = dest;
   do {
     if (!n--)

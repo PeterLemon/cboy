@@ -98,8 +98,8 @@ struct state_s {
   uint8_t joyp_buttons;
   uint8_t joyp_directions;
   uint8_t joyp_select;
-  uint64_t masterClock; // incremented at 1,048,576 Hz
-  uint64_t lastMasterClock; 
+  uint32_t masterClock; // incremented at 1,048,576 Hz
+  uint32_t lastMasterClock;
   uint8_t div, tima, tma, tac;	// timers
   int serialBitsSent;	// bits sent over link
   int serialClocksUntilNextSend;

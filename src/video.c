@@ -20,8 +20,10 @@
 #include "video.h"
 #include "memory.h"
 #include "cpu.h"
+#include <fbtext.h>
+#include <rcp/vi.h>
 
-pixel_t pixmem[160*144];
+pixel_t pixmem[160*144] __attribute__((aligned(16)));
 pixel_t colormem[160*144];
 
 void vid_drawOpaqueSpan( uint8_t pal, uint16_t vramAddr, int x, int y, int vramBank, int xFlip, int updateColormem ) {
@@ -490,8 +492,50 @@ inline uint16_t rgb555_to_rgb565( pixel_t in )
     return out;
 }
 
+// These pre-defined values are suitable for NTSC.
+// TODO: Add support for PAL and PAL-M televisions.
+static vi_state_t vi_state = {
+  0x0000324E, // status
+  0x00200000, // origin
+  0x00000140, // width
+  0x00000002, // intr
+  0x00000000, // current
+  0x03E52239, // burst
+  0x0000020D, // v_sync
+  0x00000C15, // h_sync
+  0x0C150C15, // leap
+  0x006C02EC, // h_start
+  0x002501FF, // v_start
+  0x000E0204, // v_burst
+  0x00000200, // x_scale
+  0x00000400, // y_scale
+};
+
+struct libn64_fbtext_context fbtext;
+
 void vid_init()
 {
+  vi_flush_state(&vi_state);
+
+  for (unsigned i = 0; i < 320 * 240 * 2; i += 16) {
+    __asm__ __volatile__(
+      ".set gp=64\n\t"
+      "cache 0xD, 0x0(%0)\n\t"
+      "sd $zero, 0x0(%0)\n\t"
+      "sd $zero, 0x8(%0)\n\t"
+      "cache 0x19, 0x0(%0)\n\t"
+      ".set gp=default\n\t"
+
+      :: "r" (0x80000000 | (vi_state.origin + i))
+      : "memory"
+    );
+  }
+
+  libn64_fbtext_init(&fbtext, 0x200000, LIBN64_FBTEXT_COLOR_WHITE,
+      LIBN64_FBTEXT_COLOR_BLACK, 0x140, LIBN64_FBTEXT_16BPP);
+
+  fbtext.x = 2; fbtext.y = 1;
+  libn64_fbtext_puts(&fbtext, "In vid_init()\n");
 }
 
 void vid_waitForNextFrame()
@@ -500,4 +544,29 @@ void vid_waitForNextFrame()
 
 void vid_frame()
 {
+#if 1
+  unsigned i, j;
+
+  for (i = 0; i < 160; i++) {
+    for (j = 0; j < 144; j += 8) {
+      __asm__ __volatile__(
+        ".set noat\n\t"
+        ".set gp=64\n\t"
+        "cache 0xD, 0x0(%0)\n\t"
+        "addiu $at, $zero, -0x1\n\t"
+        "ld $at, 0x0(%1)\n\t"
+        "sd $at, 0x0(%0)\n\t"
+        "ld $at, 0x8(%1)\n\t"
+        "sd $at, 0x8(%0)\n\t"
+        "cache 0x19, 0x0(%0)\n\t"
+        ".set gp=default\n\t"
+        ".set at\n\t"
+
+        :: "r" (0x80000000 | (vi_state.origin + (i * 320 * 2) + j * 2)),
+           "r" (pixmem + (i * 160) + j)
+        : "memory"
+      );
+    }
+  }
+#endif
 }

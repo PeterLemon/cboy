@@ -3552,7 +3552,7 @@ void cpu_do_one_instruction()
   // Update the master clock from which all timers are derived.
   // Incrememnted at 1048576 Hz (1/4 of a real gameboy).
   state.lastMasterClock = state.masterClock;
-  uint64_t mc = state.masterClock + state.instr_time;
+  uint32_t mc = state.masterClock + state.instr_time;
   if( mc >= 1048576 )
     mc -= 1048576;
   state.masterClock = mc;
