@@ -1,8 +1,8 @@
 target = cboy
 csources = $(wildcard *.c)
 objects = $(csources:.c=.o)
-CFLAGS= -std=c99 -O3 -ggdb -Wall -Werror `sdl2-config --cflags`
-CXXFLAGS= -O3 -ggdb -Wall `sdl2-config --cflags`
+CFLAGS= -std=c99 -O3 -ggdb -Wall -Werror
+CXXFLAGS= -O3 -ggdb -Wall
 
 .PHONY: all
 all: $(target)
@@ -14,7 +14,7 @@ ifneq ($(MAKECMDGOALS),clean)
 endif
 
 $(target): Makefile $(objects)
-	$(CXX) $(CFLAGS) $(objects) `sdl2-config --libs` -o $(target)
+	$(CXX) $(CFLAGS) $(objects) -o $(target)
 
 .PHONY: clean
 clean:

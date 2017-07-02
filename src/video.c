@@ -20,14 +20,9 @@
 #include "video.h"
 #include "memory.h"
 #include "cpu.h"
-#include <SDL.h>
 
 pixel_t pixmem[160*144];
 pixel_t colormem[160*144];
-
-SDL_Window *window;
-SDL_Renderer *renderer;
-SDL_Texture *gametex;
 
 void vid_drawOpaqueSpan( uint8_t pal, uint16_t vramAddr, int x, int y, int vramBank, int xFlip, int updateColormem ) {
 
@@ -497,28 +492,6 @@ inline uint16_t rgb555_to_rgb565( pixel_t in )
 
 void vid_init()
 {
-    // set up window and renderer
-    const int scale = 2;
-    window = SDL_CreateWindow( "cboy",
-                               SDL_WINDOWPOS_UNDEFINED,
-                               SDL_WINDOWPOS_UNDEFINED,
-                               160*scale,
-                               144*scale,
-                               0 );
-    renderer = SDL_CreateRenderer( window, -1, SDL_RENDERER_PRESENTVSYNC );
-    SDL_RenderSetLogicalSize( renderer, 160, 144 );
-
-    // clear trash out of window by drawing black
-    SDL_SetRenderDrawColor( renderer, 0, 0, 0, 255 );
-    SDL_RenderClear(renderer);
-    SDL_RenderPresent(renderer);
-
-    // set up game texture
-    gametex = SDL_CreateTexture( renderer,
-                                 SDL_PIXELFORMAT_BGR555,
-                                 SDL_TEXTUREACCESS_STREAMING,
-                                 160,
-                                 144 );
 }
 
 void vid_waitForNextFrame()
@@ -527,11 +500,4 @@ void vid_waitForNextFrame()
 
 void vid_frame()
 {
-    if( state.ly != 0 )
-        printf("warning: in vid_frame and ly is %d instead of 0\n", state.ly);
-
-    SDL_UpdateTexture( gametex, NULL, pixmem, 160 * sizeof(pixel_t) );
-    //SDL_RenderClear( renderer );
-    SDL_RenderCopy( renderer, gametex, NULL, NULL );
-    SDL_RenderPresent( renderer ); 
 }
