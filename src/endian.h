@@ -22,6 +22,6 @@
 #include "libc.h"
 #include "types.h"
 
-#define __LITTLE_ENDIAN__ 1
+#define __BIG_ENDIAN__ 1
 
 #endif // !_ENDIAN_H_

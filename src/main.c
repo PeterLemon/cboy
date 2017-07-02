@@ -44,7 +44,7 @@ struct command {
     int end;    // 0 (default) for commands, 1 for end-of-array sentinel
 };
 void print_usage();
-int main(int, char**);
+int cmd_run(int, char**);
 int cmd_help(int, char**);
 int cmd_exit(int, char**);
 int cmd_info(int, char**);
@@ -58,7 +58,7 @@ struct command cmds[] = {
     },
     {
         .name = "run",
-        .func = main,
+        .func = cmd_run,
         .help_short = "Run a Game Boy ROM in the emulator.",
         .help_long = "run <romfile>\n\trun romfile in the Game Boy emulator",
     },
@@ -121,7 +121,11 @@ int cmd_help( int argc, char *argv[] )
     return 1;
 }
 
-int main( int argc, char *argv[] )
+void main() {
+  cmd_run(0, NULL);
+}
+
+int cmd_run( int argc, char *argv[] )
 {
     mem_init();
     audio_init();

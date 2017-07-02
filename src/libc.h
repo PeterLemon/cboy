@@ -19,19 +19,15 @@
 #ifndef _LIBC_H_
 #define _LIBC_H_
 
-typedef signed char int8_t;
-typedef unsigned char uint8_t;
-typedef unsigned short uint16_t;
-typedef unsigned uint32_t;
-typedef unsigned long uint64_t;
-typedef unsigned long size_t;
+#include <stddef.h>
+#include <stdint.h>
 
 static inline uint32_t be16toh(uint32_t big_endian_16bits) {
-  return __builtin_bswap16(big_endian_16bits);
+  return big_endian_16bits;
 }
 
 static inline uint32_t be32toh(uint32_t big_endian_32bits) {
-  return __builtin_bswap32(big_endian_32bits);
+  return big_endian_32bits;
 }
 
 static inline void *memcpy(void *dest, const void *src, size_t n)

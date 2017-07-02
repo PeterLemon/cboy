@@ -19,8 +19,6 @@
 #ifndef _CART_H_
 #define _CART_H_
 #include "types.h"
-#include <stddef.h> // for size_t
-#include <stdio.h> // for FILE
 
 #ifdef __cplusplus
 extern "C" {
@@ -54,7 +52,6 @@ struct cart_s {
   void (*cleanup)(void);
   char savename[256];
   int huc3_ram_mode;
-  FILE *fd;
 };
 
 #define MAX_CARTROM_SIZE	8388608

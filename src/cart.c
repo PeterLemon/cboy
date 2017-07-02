@@ -142,16 +142,6 @@ void cart_init_file( char* bootromName, char* cartromName ) {
   // load extram from file if battery backed
   if( cart.battery_backed && (cart.extram_size > 0) )
   {
-    FILE *f;
-    f = fopen( cart.savename, "r" );
-    if( f != NULL )
-    {
-      if( 1 != fread( cart.extram, cart.extram_size, 1, f ) )
-      {
-        exit(1);
-      }
-      fclose( f );
-    }
   }
   
   cart_reset_mbc();
@@ -265,13 +255,6 @@ void cart_cleanup()
   // save the extram to disk
   if( cart.battery_backed && (cart.extram_size > 0) )
   {
-    FILE *f;
-    f = fopen( cart.savename, "w" );
-    if( f != NULL )
-    {
-      fwrite( cart.extram, cart.extram_size, 1, f );
-      fclose(f);
-    }
   }
   
   // free cartrom, bootrom, and extram
