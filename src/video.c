@@ -185,7 +185,6 @@ void vid_drawTransparentSpan( uint8_t pal, uint16_t vramAddr, int x, int y, int 
         myPalette[3] = state.obpd[(pal*8)+6] + (state.obpd[(pal*8)+7]<<8);
     }
 
-
     int lineStart = 160 * y;
 
 
@@ -459,39 +458,6 @@ void vid_render_line()
 
 }
 
-inline uint32_t rgb555_to_SDL( int color )
-{
-    int r = ((color & 0x001F) >> 0      ) << 3;
-    int g = ((color & 0x03E0) >> 5      ) << 3;
-    int b = ((color & 0x7C00) >> 10     ) << 3;
-    //return SDL_MapRGB( window->format, r, g, b );
-    // TODO
-    return g+b+r;
-}
-
-inline uint32_t rgb555_to_rgb888( int color )
-{
-    uint32_t out = 0;
-    int r = ((color & 0x001F) >> 0      ) << 3;
-    r += (color & 0x001C)>>2;
-    int g = ((color & 0x03E0) >> 5      ) << 3;
-    g += (color & 0x0380) >> 7;
-    int b = ((color & 0x7C00) >> 10     ) << 3;
-    b+= (color & 0x7000) >> 12;
-    out = (r<<16) + (g<<8) + b;
-    return out;
-}
-
-inline uint16_t rgb555_to_rgb565( pixel_t in )
-{
-    uint16_t out;
-    const int r = ((in & 0x001F) >> 0      ) << 0;
-    const int g = ((in & 0x03E0) >> 5      ) << 1;
-    const int b = ((in & 0x7C00) >> 10     ) << 0;
-    out = (r<<11) + (g<<5) + b;
-    return out;
-}
-
 // These pre-defined values are suitable for NTSC.
 // TODO: Add support for PAL and PAL-M televisions.
 static vi_state_t vi_state = {
@@ -534,8 +500,10 @@ void vid_init()
   libn64_fbtext_init(&fbtext, 0x200000, LIBN64_FBTEXT_COLOR_WHITE,
       LIBN64_FBTEXT_COLOR_BLACK, 0x140, LIBN64_FBTEXT_16BPP);
 
-  fbtext.x = 2; fbtext.y = 1;
-  libn64_fbtext_puts(&fbtext, "In vid_init()\n");
+  fbtext.x = 13; fbtext.y = 1;
+  libn64_fbtext_puts(&fbtext, "cboy by jrra\n");
+  fbtext.x = 6; fbtext.y = 13;
+  libn64_fbtext_puts(&fbtext, "n64chain port by marathonm\n");
 }
 
 void vid_waitForNextFrame()
@@ -544,29 +512,28 @@ void vid_waitForNextFrame()
 
 void vid_frame()
 {
-#if 1
   unsigned i, j;
 
   for (i = 0; i < 160; i++) {
     for (j = 0; j < 144; j += 8) {
+      uint32_t clh1, clh2;
+
       __asm__ __volatile__(
         ".set noat\n\t"
         ".set gp=64\n\t"
-        "cache 0xD, 0x0(%0)\n\t"
-        "addiu $at, $zero, -0x1\n\t"
-        "ld $at, 0x0(%1)\n\t"
-        "sd $at, 0x0(%0)\n\t"
-        "ld $at, 0x8(%1)\n\t"
-        "sd $at, 0x8(%0)\n\t"
-        "cache 0x19, 0x0(%0)\n\t"
+        "ld %0, 0x0(%3)\n\t"
+        "ld %1, 0x8(%3)\n\t"
+        "cache 0xD, 0x0(%2)\n\t"
+        "sd %0, 0x0(%2)\n\t"
+        "sd %1, 0x8(%2)\n\t"
         ".set gp=default\n\t"
         ".set at\n\t"
 
-        :: "r" (0x80000000 | (vi_state.origin + (i * 320 * 2) + j * 2)),
-           "r" (pixmem + (i * 160) + j)
+        : "=&r" (clh1), "=&r" (clh2)
+        : "r" (0x80000000 | (vi_state.origin + ((i + 48) * 320 * 2) + (j + 80) * 2)),
+          "r" (pixmem + (i * 160) + j)
         : "memory"
       );
     }
   }
-#endif
 }
