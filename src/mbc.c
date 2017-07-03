@@ -28,32 +28,12 @@
  */
 int mbc_romSize2numBanks( uint8_t romSize )
 {
+  static const unsigned lut[] __attribute__((aligned(16))) = {
+    2, 4, 8, 16, 32, 64, 128, 256
+  };
+
   switch( romSize )
   {
-    case 0x00:
-      return 2;
-      break;
-    case 0x01:
-      return 4;
-      break;
-    case 0x02:
-      return 8;
-      break;
-    case 0x03:
-      return 16;
-      break;
-    case 0x04:
-      return 32;
-      break;
-    case 0x05:
-      return 64;
-      break;
-    case 0x06:
-      return 128;
-      break;
-    case 0x07:
-      return 256;
-      break;
     case 0x52:
       return 72;
       break;
@@ -64,6 +44,8 @@ int mbc_romSize2numBanks( uint8_t romSize )
       return 96;
       break;
     default:
+      if (romSize < 8)
+        return lut[romSize];
       // uh-oh
       return 2;
       break;
@@ -72,22 +54,13 @@ int mbc_romSize2numBanks( uint8_t romSize )
 
 int mbc_ramSize2numBytes( uint8_t ramSize )
 {
-  switch( ramSize )
-  {
-    case 0x00:
-      return 0;
-      break;
-    case 0x01:
-      return 2048;
-      break;
-    case 0x02:
-      return 8192;
-      break;
-    case 0x03:
-      return 32768;
-      break;
-    default:
-      return 0;
-      break;
-  }
+  static const unsigned lut[] __attribute__((aligned(16))) = {
+    0, 2048, 8192, 32768
+  };
+
+  if (ramSize >= 4)
+    return 0;
+
+  return lut[ramSize];
 }
+

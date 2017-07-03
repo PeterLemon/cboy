@@ -88,10 +88,10 @@ struct state_s {
     uint16_t af;
   };
 #endif
-  int flag_c;
-  int flag_h;
-  int flag_n;
-  int flag_z;
+  char flag_c;
+  char flag_h;
+  char flag_n;
+  char flag_z;
   int vid_mode;
   int old_vid_mode;
   uint8_t joyp;
@@ -257,163 +257,6 @@ typedef enum {
   INTERRUPT_JOYPAD
 } InterruptMessage_t;
 
-// ops
-void UNDEF(void);
-void UNDEF_CB(void);
-void LOCKUP(void);	// D3,DB,DD,EB,EC,ED,F4,FC,FD
-void NOP(void);		// 00
-void LD_BC_WORD(void);	// 01
-void LD_BC_A(void);	// 02
-void INC_BC(void);	// 03
-void INC_R(void);
-void DEC_R(void);
-void LD_B_BYTE(void);	// 06
-void RLCA(void);	// 07
-void LD_WORD_SP(void);	// 08
-void ADD_HL_BC(void);	// 09
-void LD_A_BC(void);	// 0A
-void DEC_BC(void);	// 0B
-void LD_C_BYTE(void);	// 0E
-void RRCA(void);	// 0F
-void STOP(void);	// 10
-void LD_DE_WORD(void);	// 11
-void LD_DE_A(void);	// 12
-void INC_DE(void);	// 13
-void LD_D_BYTE(void);	// 16
-void RLA(void);		// 17
-void JR_INDEX(void);	// 18
-void ADD_HL_DE(void);	// 19
-void LD_A_DE(void);	// 1A
-void DEC_DE(void);	// 1B
-void LD_E_BYTE(void);	// 1E
-void RRA(void);		// 1F
-void JR_NZ_INDEX(void);	// 20
-void LD_HL_WORD(void);	// 21
-void LDI_HL_A(void);	// 22
-void INC_HL(void);	// 23
-void LD_H_BYTE(void);	// 26
-void DAA(void);		// 27
-void JR_Z_INDEX(void);	// 28
-void ADD_HL_HL(void);	// 29
-void LDI_A_HL(void);	// 2A
-void DEC_HL(void);	// 2B
-void LD_L_BYTE(void);	// 2E
-void CPL(void);		// 2F
-void JR_NC_INDEX(void);	// 30
-void LD_SP_WORD(void);	// 31
-void LDD_HL_A(void);	// 32
-void INC_SP(void);	// 33
-void INC_AT_HL(void);	// 34
-void DEC_AT_HL(void);	// 35
-void LD_HL_BYTE(void);	// 36
-void SCF(void);		// 37
-void JR_C_INDEX(void);	// 38
-void ADD_HL_SP(void);	// 39
-void LDD_A_HL(void);	// 3A
-void DEC_SP(void);	// 3B
-void LD_A_BYTE(void);	// 3E
-void CCF(void);		// 3F
-void LD_R_R(void);
-void LD_B_HL(void);	// 46
-void LD_C_HL(void);	// 4E
-void LD_D_HL(void);	// 56
-void LD_E_HL(void);	// 5E
-void LD_H_HL(void);	// 66
-void LD_L_HL(void);	// 6E
-void LD_HL_R(void);	// 70-75,77
-void HALT(void);	// 76
-void LD_A_HL(void);	// 7E
-void ADD_A_R(void);	// 80-85,87
-void ADD_A_HL(void);	// 86
-void ADC_A_R(void);	// 88-8D,8F
-void ADC_A_HL(void);	// 8E
-void SUB_R(void);	// 90-95,97
-void SUB_HL(void);	// 96
-void SBC_A_R(void);	// 98-9D,9F
-void SBC_A_HL(void);	// 9E
-void AND_R(void);	// A0-A5,A7
-void AND_HL(void);	// A6
-void XOR_R(void);	// A8-AD,AF
-void XOR_HL(void);	// AE
-void OR_R(void);
-void OR_HL(void);	// B6
-void CP_R(void);	// B8
-void CP_HL(void);	// BE
-void RET_CC(void);
-void POP_BC(void);	// C1
-void JP_NZ_ADDR(void);	// C2
-void JP_ADDR(void);	// C3
-void CALL_NZ(void);	// C4
-void PUSH_BC(void);	// C5
-void ADD_A_BYTE(void);	// C6
-void RST_0(void);	// C7
-void RET(void);		// C9
-void JP_Z_ADDR(void);	// CA
-void CB_PREFIX(void);	// CB
-void CALL_Z(void);	// CC
-void CALL(void);	// CD
-void ADC_A_BYTE(void);	// CE
-void RST_8(void);	// CF
-void POP_DE(void);	// D1
-void JP_NC_ADDR(void);	// D2
-void CALL_NC(void);	// D4
-void PUSH_DE(void);	// D5
-void SUB_A_BYTE(void);	// D6
-void RST_10(void);	// D7
-void RETI(void);	// D9
-void JP_C_ADDR(void);	// DA
-void CALL_C(void);	// DC
-void SBC_A_BYTE(void);	// DE
-void RST_18(void);	// DF
-void LD_FF_BYTE_A(void);// E0
-void POP_HL(void);	// E1
-void LD_FF_C_A(void);	// E2
-void PUSH_HL(void);	// E5
-void AND_BYTE(void);	// E6
-void RST_20(void);	// E7
-void ADD_SP_OFFSET(void);	// E8
-void JP_HL(void);	// E9
-void LD_WORD_A(void);	// EA
-void XOR_BYTE(void);	// EE
-void RST_28(void);	// EF
-void LD_A_FF_BYTE(void);// F0
-void POP_AF(void);	// F1
-void LD_A_FF_C(void);	// F2
-void DI(void);		// F3
-void PUSH_AF(void);	// F5
-void OR_BYTE(void);	// F6
-void RST_30(void);	// F7
-void LDHL_SP_OFFSET(void);	// F8
-void LD_SP_HL(void);	// F9
-void LD_A_WORD(void);	// FA
-void EI(void);		// FB
-void CP_BYTE(void);	// FE
-void RST_38(void);	// FF
-
-// cb ops
-void CB_RLC_R(void);	// CB 00-05,07
-void CB_RLC_HL(void);	// CB 06
-void CB_RRC_R(void);	// CB 08-0D,0F
-void CB_RRC_HL(void);	// CB 0E
-void CB_RL_R(void);	// CB 10-15,17
-void CB_RL_HL(void);	// CB 16
-void CB_RR_R(void);	// CB 18-1D,1F
-void CB_RR_HL(void);	// CB 1E
-void CB_SLA_R(void);	// CB 20-25,27
-void CB_SLA_HL(void);	// CB 26
-void CB_SRA_R(void);	// CB 28-2D,2F
-void CB_SRA_HL(void);	// CB 2E
-void CB_SWAP_R(void);	// CB 30-35,37
-void CB_SWAP_HL(void);	// CB 36
-void CB_SRL_R(void);	// CB 38-3D,3F
-void CB_SRL_HL(void);	// CB 3E
-void CB_BIT_R(void);	// CB 40-7F (except (HL))
-void CB_BIT_HL(void);	// CB 46,4E,56,5E,66,6E,76,7E
-void CB_RES_B_R(void);	// CB 80-BF (except (HL))
-void CB_RES_B_HL(void);	// CB 86,8E,96,9E,A6,AE,B6,BE
-void CB_SET_B_R(void);	// CB C0-FF (except (HL))
-void CB_SET_B_HL(void);	// CB C6,CE,D6,DE,E6,EE,F6,FE
-
 int cpu_init( void );
 void cpu_do_one_instruction( void );
 void cpu_do_one_frame( void );
@@ -422,9 +265,6 @@ uint8_t cpu_get_flags_register( void );
 void cpu_set_flags_register( uint8_t );
 
 extern int stop;
-extern int op_lengths[0x100];
-extern int op_times[0x100];
-extern int op_cb_times[0x100];
 
 #ifdef __cplusplus
 }

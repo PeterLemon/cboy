@@ -29,11 +29,11 @@
 pixel_t visual_memory[65536];
 
 uint8_t ram[0x1];
-uint8_t vram_bank_zero[0x2000];	// 8000-9FFF
-uint8_t vram_bank_one[0x2000];	// 8000-9FFF
-uint8_t wram[0x8000];
-uint8_t *wram_bank_zero;	// C000-CFFF
-uint8_t *wram_bank_n;		// D000-DFFF
+uint8_t vram_bank_zero[0x2000] __attribute__((aligned(16)));	// 8000-9FFF
+uint8_t vram_bank_one[0x2000] __attribute__((aligned(16)));	// 8000-9FFF
+static uint8_t wram[0x8000] __attribute__((aligned(16)));
+static uint8_t *wram_bank_zero;	// C000-CFFF
+static uint8_t *wram_bank_n;		// D000-DFFF
 uint8_t oam[0xA0];		// FE00-FE9F
 uint8_t hram[0x7F];		// FF80-FFFE
 
