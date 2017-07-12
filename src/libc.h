@@ -30,17 +30,6 @@ static inline uint32_t be32toh(uint32_t big_endian_32bits) {
   return big_endian_32bits;
 }
 
-static inline void *memcpy(void *dest, const void *src, size_t n)
-{
-  char *csrc = (char *)src;
-  char *cdest = (char *)dest;
- 
-  for (int i=0; i<n; i++)
-    cdest[i] = csrc[i];
-
-  return dest;
-}
-
 static inline char *strcat(char *dest, const char *src) {
   char *ret = dest;
   while (*dest)

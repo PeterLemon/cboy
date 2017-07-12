@@ -25,7 +25,6 @@ int huc3_ram_mode = 0;
 
 void mbc_huc3_install()
 {
-  cart.cleanup = &mbc_huc3_cleanup;
   cart.huc3_ram_mode = 0;
   
   int i;
@@ -178,5 +177,3 @@ void mbc_huc3_write_extram( uint16_t address, uint8_t data ) {
   cart.extram_bank[address&0x1fff] = data;
 }
 
-void mbc_huc3_cleanup() {
-}

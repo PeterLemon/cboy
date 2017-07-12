@@ -27,7 +27,6 @@
 #include "audio.h"
 #include "libc.h"
 
-int stop = 0;
 int pause = 0;
 
 void main() {
@@ -37,10 +36,10 @@ void main() {
     {
         return;
     }
-    cart_init( NULL, NULL );
+    cart_init();
     vid_init();
     input_init();
-    while( !stop )
+    while( 1 )
     {
         vid_waitForNextFrame();
         input_handle();
@@ -51,8 +50,6 @@ void main() {
             audio_frame();
         }
     }
-
-    cart_cleanup();
-    audio_cleanup();
+    __builtin_unreachable();
 }
 

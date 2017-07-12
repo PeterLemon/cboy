@@ -49,7 +49,6 @@ struct cart_s {
   size_t extram_size;
   int extram_num_banks;
   int battery_backed;
-  void (*cleanup)(void);
   char savename[256];
   int huc3_ram_mode;
 };
@@ -57,14 +56,12 @@ struct cart_s {
 #define MAX_CARTROM_SIZE	8388608
 #define MAX_BOOTROM_SIZE	2304
 
-extern void cart_init( char* boot_rom, char* rom );
+extern void cart_init( void );
 void cart_init_file( char* boot_rom, char* rom );
 void cart_init_chardev( char* boot_rom, char* rom );
-extern void cart_cleanup( void );
 extern void cart_disable_bootrom( void );
 void cart_init_cartrom( char* cartromName );
 void cart_init_bootrom( char* bootromName );
-void cart_default_cleanup( void );
 extern void cart_reset_mbc( void );
 extern struct cart_s cart;
 

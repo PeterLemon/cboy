@@ -154,21 +154,10 @@ static void INC_BC( void )
   // no flags affected
 }
 
-static void INC_R( void )
+static void INC_DEC_R_COMMON(int z_cond, int new_r, int old_r)
 {
-  // opcodes 04, 0C, 14, 1C, 24, 2C, 3C
-  // INC r
-  // 00rrr100
-  
-  int regNumber = ((int)(state.op) & 0x38) >> 3;
-  uint8_t *reg = cpu_getReg(regNumber);
-  
-  int old_r = (*reg);
-  (*reg)++;
-  int new_r = (*reg);
-  
   // flag Z
-  if((*reg) == 0)
+  if(z_cond == 0)
     SET_Z();
   else
     RESET_Z();
@@ -187,6 +176,22 @@ static void INC_R( void )
   state.pc++;
 }
 
+static void INC_R( void )
+{
+  // opcodes 04, 0C, 14, 1C, 24, 2C, 3C
+  // INC r
+  // 00rrr100
+  
+  int regNumber = ((int)(state.op) & 0x38) >> 3;
+  uint8_t *reg = cpu_getReg(regNumber);
+  
+  int old_r = (*reg);
+  (*reg)++;
+  int new_r = (*reg);
+
+  INC_DEC_R_COMMON(*reg, new_r, old_r);
+}
+
 static void DEC_R( void )
 {
   // opcodes 05, 0D, 15, 1D, 25, 2D, 3D
@@ -200,24 +205,7 @@ static void DEC_R( void )
   (*reg)--;
   int new_r = (*reg);
   
-  // flag Z
-  if(new_r == 0)
-    SET_Z();
-  else
-    RESET_Z();
-  
-  // flag N
-  SET_N();
-  
-  // flag H
-  if( (new_r & 0xF0) != (old_r & 0xF0) )
-    SET_H();
-  else
-    RESET_H();
-  
-  // flag C is not affected
-  
-  state.pc++;
+  INC_DEC_R_COMMON(new_r, new_r, old_r);
 }
 
 static void LD_B_BYTE( void )
@@ -225,6 +213,20 @@ static void LD_B_BYTE( void )
   // opcode 06
   state.b = read_byte(state.pc+1);
   state.pc += 2;
+}
+
+static void RLxA_RRxA_COMMON(void)
+{
+  // flag Z
+  RESET_Z();
+  
+  // flag N
+  RESET_N();
+  
+  // flag H
+  RESET_H();
+  
+  state.pc++;
 }
 
 static void RLCA( void )
@@ -242,17 +244,25 @@ static void RLCA( void )
   }
   else
     RESET_C();
+
+  RLxA_RRxA_COMMON();
+}
+
+static void RRCA( void )
+{
+  // opcode 0F
   
-  // flag Z
-  RESET_Z();
+  if( state.a & 0x01 )
+    SET_C();
+  else
+    RESET_C();
   
-  // flag N
-  RESET_N();
+  state.a = state.a >> 1;
   
-  // flag H
-  RESET_H();
-  
-  state.pc++;
+  if( ISSET_C() )
+    state.a |= 0x80;
+
+  RLxA_RRxA_COMMON(); 
 }
 
 static void LD_WORD_SP( void )
@@ -268,16 +278,27 @@ static void LD_WORD_SP( void )
   state.pc += 3;
 } 
 
-static void ADD_HL_BC( void )
+static void ADD16_COMMON( int result )
 {
-  // opcode 09
-  int result = (int)(state.hl) + (int)(state.bc);
-  
   // flag Z in not affected
   
   // flag N
   RESET_N();
-  
+
+  // flag C
+  if( result > 0xFFFF )
+    SET_C();
+  else
+    RESET_C();
+
+  state.pc++;
+}
+
+static void ADD_HL_BC( void )
+{
+  // opcode 09
+  int result = (int)(state.hl) + (int)(state.bc);
+    
   // flag H
   int c = (int)state.l + (int)state.c;
   if( c > 0xFF )
@@ -289,16 +310,10 @@ static void ADD_HL_BC( void )
     SET_H();
   else
     RESET_H();
-  
-  // flag C
-  if( result > 0xFFFF )
-    SET_C();
-  else
-    RESET_C();
-  
+
+  ADD16_COMMON(result);
+
   state.hl = result;
-  
-  state.pc++;
 }
 
 static void LD_A_BC( void )
@@ -324,32 +339,6 @@ static void LD_C_BYTE( void )
   // opcode 0E
   state.c = read_byte(state.pc+1);
   state.pc += 2;
-}
-
-static void RRCA( void )
-{
-  // opcode 0F
-  
-  if( state.a & 0x01 )
-    SET_C();
-  else
-    RESET_C();
-  
-  state.a = state.a >> 1;
-  
-  if( ISSET_C() )
-    state.a |= 0x80;
-  
-  // flag Z
-  RESET_Z();
-  
-  // flag N
-  RESET_N();
-  
-  // flag H
-  RESET_H();
-  
-  state.pc++;
 }
 
 static void STOP( void )
@@ -420,16 +409,7 @@ static void RLA( void )
   if( old_cy )
     state.a |= 0x01;
   
-  // flag Z
-  RESET_Z();
-  
-  // flag N
-  RESET_N();
-  
-  // flag H
-  RESET_H();
-  
-  state.pc++;
+  RLxA_RRxA_COMMON();
 }
 
 static void JR_INDEX( void )
@@ -444,11 +424,6 @@ static void ADD_HL_DE( void )
   // opcode 19
   int result = (int)(state.hl) + (int)(state.de);
   
-  // flag Z in not affected
-  
-  // flag N
-  RESET_N();
-  
   // flag H
   int c = (int)state.l + (int)state.e;
   if( c > 0xFF )
@@ -461,15 +436,9 @@ static void ADD_HL_DE( void )
   else
     RESET_H();
   
-  // flag C
-  if( result > 0xFFFF )
-    SET_C();
-  else
-    RESET_C();
+  ADD16_COMMON(result);
   
   state.hl = result;
-  
-  state.pc++;
 }
   
 
@@ -543,16 +512,7 @@ static void RRA( void )
   if( old_cy )
     state.a |= 0x80;
   
-  // flag Z
-  RESET_Z();
-  
-  // flag N
-  RESET_N();
-  
-  // flag H
-  RESET_H();
-  
-  state.pc++;
+  RLxA_RRxA_COMMON();
 }
 
 static void JR_NZ_INDEX( void )
@@ -673,11 +633,6 @@ static void ADD_HL_HL( void )
   // opcode 29
   int result = (int)(state.hl) + (int)(state.hl);
   
-  // flag Z in not affected
-  
-  // flag N
-  RESET_N();
-  
   // flag H
   int c = (int)state.l + (int)state.l;
   if( c > 0xFF )
@@ -689,16 +644,10 @@ static void ADD_HL_HL( void )
     SET_H();
   else
     RESET_H();
-  
-  // flag C
-  if( result > 0xFFFF )
-    SET_C();
-  else
-    RESET_C();
+
+  ADD16_COMMON(result);  
   
   state.hl = result;
-  
-  state.pc++;
 }
   
 
@@ -901,11 +850,6 @@ static void ADD_HL_SP( void )
   // opcode 39
   int result = (int)(state.hl) + (int)(state.sp);
   
-  // flag Z in not affected
-  
-  // flag N
-  RESET_N();
-  
   // flag H
   int c = (int)state.l + (int)(state.sp & 0x00ff);
   if( c > 0xFF )
@@ -917,16 +861,10 @@ static void ADD_HL_SP( void )
     SET_H();
   else
     RESET_H();
-  
-  // flag C
-  if( result > 0xFFFF )
-    SET_C();
-  else
-    RESET_C();
-  
+
+  ADD16_COMMON(result);
+ 
   state.hl = result;
-  
-  state.pc++;
 }
 
 static void LDD_A_HL( void )
@@ -1069,6 +1007,25 @@ static void LD_A_HL( void )
   state.pc++;
 }
 
+static void ADD_ADC_A_COMMON( int c_cond ) {
+  // flag Z
+  if( state.a == 0 )
+    SET_Z();
+  else
+    RESET_Z();
+  
+  // flag N
+  RESET_N();
+
+  // flag C
+  if( c_cond > 0xFF )
+    SET_C();
+  else
+    RESET_C();
+  
+  state.pc++;
+}
+
 static void ADD_A_R( void )
 {
   // opcode 80-85,87
@@ -1082,28 +1039,13 @@ static void ADD_A_R( void )
   
   state.a = new_a;
   
-  // flag Z
-  if( state.a == 0 )
-    SET_Z();
-  else
-    RESET_Z();
-  
-  // flag N
-  RESET_N();
-  
   // flag H
   if( ( (old_a & 0x0F) + (*reg & 0x0F) ) & 0x10 )
     SET_H();
   else
     RESET_H();
-  
-  // flag C
-  if( new_a > 0xFF )
-    SET_C();
-  else
-    RESET_C();
-  
-  state.pc++;
+
+  ADD_ADC_A_COMMON ( new_a );
 }
 
 static void ADD_A_HL( void )
@@ -1115,28 +1057,13 @@ static void ADD_A_HL( void )
   
   state.a = new_a;
   
-  // flag Z
-  if( state.a == 0 )
-    SET_Z();
-  else
-    RESET_Z();
-  
-  // flag N
-  RESET_N();
-  
   // flag H
   if( ((int)(state.a & 0x0F) - (int)(data & 0x0F)) < 0 )
     SET_H();
   else
     RESET_H();
-  
-  // flag C
-  if( new_a > 0xFF )
-    SET_C();
-  else
-    RESET_C();
-  
-  state.pc++;
+
+  ADD_ADC_A_COMMON(new_a);
 }
 
 static void ADC_A_R( void )
@@ -1158,28 +1085,13 @@ static void ADC_A_R( void )
   int old_a = state.a;
   state.a = temp;
   
-  // flag Z
-  if( state.a == 0 )
-    SET_Z();
-  else
-    RESET_Z();
-  
-  // flag N
-  RESET_N();
-  
   // flag H
   if( ( (old_a & 0x0F) + (*reg & 0x0F) + c ) & 0x10 )
     SET_H();
   else
     RESET_H();
-  
-  // flag C
-  if( temp > 0xFF )
-    SET_C();
-  else
-    RESET_C();
-  
-  state.pc++;
+
+  ADD_ADC_A_COMMON(temp);
 }
 
 static void ADC_A_HL( void )
@@ -1199,6 +1111,16 @@ static void ADC_A_HL( void )
   int old_a = state.a;
   state.a = temp;
   
+  // flag H
+  if( ( (old_a & 0x0F) + (data & 0x0F) + c ) & 0x10 )
+    SET_H();
+  else
+    RESET_H();
+
+  ADD_ADC_A_COMMON(temp);  
+}
+
+static void SUB_SBC_COMMON( int c_cond ) {
   // flag Z
   if( state.a == 0 )
     SET_Z();
@@ -1206,16 +1128,10 @@ static void ADC_A_HL( void )
     RESET_Z();
   
   // flag N
-  RESET_N();
-  
-  // flag H
-  if( ( (old_a & 0x0F) + (data & 0x0F) + c ) & 0x10 )
-    SET_H();
-  else
-    RESET_H();
-  
+  SET_N();
+
   // flag C
-  if( temp > 0xFF )
+  if( c_cond < 0 )
     SET_C();
   else
     RESET_C();
@@ -1236,28 +1152,13 @@ static void SUB_R( void )
   
   state.a = new_a;
   
-  // flag Z
-  if( state.a == 0 )
-    SET_Z();
-  else
-    RESET_Z();
-  
-  // flag N
-  SET_N();
-  
   // flag H
   if( ( (old_a & 0x0F) - (*reg & 0x0F) ) & 0x10 )
     SET_H();
   else
     RESET_H();
-  
-  // flag C
-  if( new_a < 0 )
-    SET_C();
-  else
-    RESET_C();
-  
-  state.pc++;
+
+  SUB_SBC_COMMON(new_a);
 }
 
 static void SUB_HL( void )
@@ -1271,28 +1172,13 @@ static void SUB_HL( void )
   
   state.a = new_a;
   
-  // flag Z
-  if( state.a == 0 )
-    SET_Z();
-  else
-    RESET_Z();
-  
-  // flag N
-  SET_N();
-  
   // flag H
   if( ( (old_a & 0x0F) - (data & 0x0F) ) & 0x10 )
     SET_H();
   else
     RESET_H();
   
-  // flag C
-  if( new_a < 0 )
-    SET_C();
-  else
-    RESET_C();
-  
-  state.pc++;
+  SUB_SBC_COMMON(new_a);
 }
 
 static void SBC_A_R( void )
@@ -1314,28 +1200,13 @@ static void SBC_A_R( void )
   int old_a = state.a;
   state.a = temp;
   
-  // flag Z
-  if( state.a == 0 )
-    SET_Z();
-  else
-    RESET_Z();
-  
-  // flag N
-  SET_N();
-  
   // flag H
   if( ( (old_a & 0x0F) - (*reg & 0x0F) - c ) & 0x10 )
     SET_H();
   else
     RESET_H();
   
-  // flag C
-  if( temp < 0 )
-    SET_C();
-  else
-    RESET_C();
-  
-  state.pc++;
+  SUB_SBC_COMMON(temp);
 }
 
 static void SBC_A_HL( void )
@@ -1355,6 +1226,17 @@ static void SBC_A_HL( void )
   int old_a = state.a;
   state.a = temp;
   
+  // flag H
+  if( ( (old_a & 0x0F) - (data & 0x0F) - c ) & 0x10 )
+    SET_H();
+  else
+    RESET_H();
+
+  SUB_SBC_COMMON(temp); 
+}
+
+static void AND_OR_XOR_COMMON(void)
+{
   // flag Z
   if( state.a == 0 )
     SET_Z();
@@ -1362,19 +1244,13 @@ static void SBC_A_HL( void )
     RESET_Z();
   
   // flag N
-  SET_N();
+  RESET_N();
   
   // flag H
-  if( ( (old_a & 0x0F) - (data & 0x0F) - c ) & 0x10 )
-    SET_H();
-  else
-    RESET_H();
+  SET_H();
   
   // flag C
-  if( temp < 0 )
-    SET_C();
-  else
-    RESET_C();
+  RESET_C();
   
   state.pc++;
 }
@@ -1388,23 +1264,8 @@ static void AND_R( void )
   uint8_t *reg = cpu_getReg(regNumber);
   
   state.a &= (*reg);
-  
-  // flag Z
-  if( state.a == 0 )
-    SET_Z();
-  else
-    RESET_Z();
-  
-  // flag N
-  RESET_N();
-  
-  // flag H
-  SET_H();
-  
-  // flag C
-  RESET_C();
-  
-  state.pc++;
+
+  AND_OR_XOR_COMMON();
 }
 
 static void AND_HL( void )
@@ -1412,22 +1273,7 @@ static void AND_HL( void )
   // opcode A6
   state.a &= read_byte(state.hl);
   
-  // flag Z
-  if( state.a == 0 )
-    SET_Z();
-  else
-    RESET_Z();
-  
-  // flag N
-  RESET_N();
-  
-  // flag H
-  SET_H();
-  
-  // flag C
-  RESET_C();
-  
-  state.pc++;
+  AND_OR_XOR_COMMON();
 }
 
 static void XOR_R( void )
@@ -1440,22 +1286,7 @@ static void XOR_R( void )
   
   state.a = state.a ^ (*reg);
   
-  // flag Z
-  if( state.a == 0 )
-    SET_Z();
-  else
-    RESET_Z();
-  
-  // flag N
-  RESET_N();
-  
-  // flag H
-  RESET_H();
-  
-  // flag C
-  RESET_C();
-  
-  state.pc++;
+  AND_OR_XOR_COMMON();
 }
 
 static void XOR_HL( void )
@@ -1463,22 +1294,7 @@ static void XOR_HL( void )
   // opcode AE
   state.a ^= read_byte(state.hl);
   
-  // flag Z
-  if( state.a == 0 )
-    SET_Z();
-  else
-    RESET_Z();
-  
-  // flag N
-  RESET_N();
-  
-  // flag H
-  RESET_H();
-  
-  // flag C
-  RESET_C();
-  
-  state.pc++;
+  AND_OR_XOR_COMMON();
 }
 
 static void OR_R( void )
@@ -1492,22 +1308,7 @@ static void OR_R( void )
   
   state.a |= (*reg);
   
-  // flag Z
-  if( state.a == 0 )
-    SET_Z();
-  else
-    RESET_Z();
-  
-  // flag N
-  RESET_N();
-  
-  // flag H
-  RESET_H();
-  
-  // flag C
-  RESET_C();
-  
-  state.pc++;
+  AND_OR_XOR_COMMON();
 }
 
 static void OR_HL( void )
@@ -1517,22 +1318,7 @@ static void OR_HL( void )
   
   state.a |= read_byte(state.hl);
   
-  // flag Z
-  if( state.a == 0 )
-    SET_Z();
-  else
-    RESET_Z();
-  
-  // flag N
-  RESET_N();
-  
-  // flag H
-  RESET_H();
-  
-  // flag C
-  RESET_C();
-  
-  state.pc++;
+  AND_OR_XOR_COMMON();
 }
 
 static void CP_R( void )
@@ -1696,21 +1482,6 @@ static void JP_ADDR( void )
   state.pc = read_word(state.pc+1);
 }
 
-static void CALL_NZ( void )
-{
-  // opcode C4
-  if( ISSET_Z() )
-  {
-    state.pc +=3;
-  }
-  else
-  {
-    state.sp -= 2;
-    write_word(state.sp, state.pc+3);
-    state.pc = read_word(state.pc+1);
-  }
-}
-
 static void PUSH_BC( void )
 {
   // opcode C5
@@ -1770,6 +1541,19 @@ static void JP_Z_ADDR( void )
   state.pc += 3;
 }
 
+static void CB_COMMON(uint8_t z_cond) {
+  if( (z_cond) == 0 )
+    SET_Z();
+  else
+    RESET_Z();
+  
+  RESET_N();
+  
+  RESET_H();
+  
+  state.pc += 2;
+}
+
 static void CB_RLC_R( void )
 {
   // opcodes CB 00-05,07
@@ -1787,17 +1571,8 @@ static void CB_RLC_R( void )
     SET_C();
     (*reg) = ((*reg) << 1) | 1;
   }
-  
-  if( (*reg) == 0 )
-    SET_Z();
-  else
-    RESET_Z();
-  
-  RESET_N();
-  
-  RESET_H();
-  
-  state.pc += 2;
+
+  CB_COMMON(*reg);
 }
 
 static void CB_RLC_HL( void )
@@ -1815,20 +1590,7 @@ static void CB_RLC_HL( void )
   }
   
   write_byte(state.hl, data);
-  
-  // flag Z
-  if( data == 0 )
-    SET_Z();
-  else
-    RESET_Z();
-  
-  // flag N
-  RESET_N();
-  
-  // flag H
-  RESET_H();
-  
-  state.pc += 2;
+  CB_COMMON(data);
 }  
 
 static void CB_RRC_R( void )
@@ -1849,20 +1611,7 @@ static void CB_RRC_R( void )
     (*reg) = ((*reg) >> 1) | 0x80;
   }
   
-  
-  // flag Z
-  if( (*reg) == 0 )
-    SET_Z();
-  else
-    RESET_Z();
-  
-  // flag N
-  RESET_N();
-  
-  // flag H
-  RESET_H();
-  
-  state.pc += 2;
+  CB_COMMON(*reg);
 }
 
 static void CB_RRC_HL( void )
@@ -1880,20 +1629,7 @@ static void CB_RRC_HL( void )
   }
   
   write_byte(state.hl, data);
-  
-  // flag Z
-  if( data == 0 )
-    SET_Z();
-  else
-    RESET_Z();
-  
-  // flag N
-  RESET_N();
-  
-  // flag H
-  RESET_H();
-  
-  state.pc += 2;
+  CB_COMMON(data);
 }
 
 static void CB_RL_R( void )
@@ -1916,19 +1652,7 @@ static void CB_RL_R( void )
   if( old_cy )
     *reg |= 0x01;
   
-  // flag Z
-  if( *reg == 0x00 )
-    SET_Z();
-  else
-    RESET_Z();
-  
-  // flag N
-  RESET_N();
-  
-  // flag H
-  RESET_H();
-  
-  state.pc += 2;
+  CB_COMMON(*reg);
 }
 
 static void CB_RL_HL( void )
@@ -1950,21 +1674,8 @@ static void CB_RL_HL( void )
   if( old_cy )
     data |= 0x01;
   
-  // flag Z
-  if( data == 0x00 )
-    SET_Z();
-  else
-    RESET_Z();
-  
-  // flag N
-  RESET_N();
-  
-  // flag H
-  RESET_H();
-  
   write_byte(state.hl, data);
-  
-  state.pc += 2;
+  CB_COMMON(data);
 }
 
 static void CB_RR_R( void )
@@ -1987,19 +1698,7 @@ static void CB_RR_R( void )
   if( old_cy )
     *reg |= 0x80;
   
-  // flag Z
-  if( *reg == 0x00 )
-    SET_Z();
-  else
-    RESET_Z();
-  
-  // flag N
-  RESET_N();
-  
-  // flag H
-  RESET_H();
-  
-  state.pc += 2;
+  CB_COMMON(*reg);
 }
 
 static void CB_RR_HL( void )
@@ -2019,21 +1718,8 @@ static void CB_RR_HL( void )
   if( old_cy )
     data |= 0x80;
   
-  // flag Z
-  if( data == 0x00 )
-    SET_Z();
-  else
-    RESET_Z();
-  
-  // flag N
-  RESET_N();
-  
-  // flag H
-  RESET_H();
-  
   write_byte(state.hl, data);
-  
-  state.pc += 2;
+  CB_COMMON(data);
 }
 
 static void CB_SLA_R( void )
@@ -2052,19 +1738,7 @@ static void CB_SLA_R( void )
   
   *reg = *reg << 1;
   
-  // flag Z
-  if( *reg == 0x00 )
-    SET_Z();
-  else
-    RESET_Z();
-  
-  // flag N
-  RESET_N();
-  
-  // flag H
-  RESET_H();
-  
-  state.pc += 2;
+  CB_COMMON(*reg);
 }
 
 static void CB_SLA_HL( void )
@@ -2080,21 +1754,8 @@ static void CB_SLA_HL( void )
   
   data = data << 1;
   
-  // flag Z
-  if( data == 0x00 )
-    SET_Z();
-  else
-    RESET_Z();
-  
-  // flag N
-  RESET_N();
-  
-  // flag H
-  RESET_H();
-  
   write_byte(state.hl, data);
-  
-  state.pc += 2;
+  CB_COMMON(data);
 }
 
 static void CB_SRA_R( void )
@@ -2114,20 +1775,7 @@ static void CB_SRA_R( void )
     RESET_C();
   
   (*reg) = (*reg) >> 1 | bit7;
-  
-  // flag Z
-  if( (*reg) == 0 )
-    SET_Z();
-  else
-    RESET_Z();
-  
-  // flag N
-  RESET_N();
-  
-  // flag H
-  RESET_H();
-  
-  state.pc += 2;
+  CB_COMMON(*reg);
 }
 
 static void CB_SRA_HL( void )
@@ -2145,20 +1793,7 @@ static void CB_SRA_HL( void )
   data = data >> 1 | bit7;
   
   write_byte(state.hl, data);
-  
-  // flag Z
-  if( data == 0 )
-    SET_Z();
-  else
-    RESET_Z();
-  
-  // flag N
-  RESET_N();
-  
-  // flag H
-  RESET_H();
-  
-  state.pc += 2;
+  CB_COMMON(data);
 }
 
 static void CB_SWAP_R( void )
@@ -2173,22 +1808,10 @@ static void CB_SWAP_R( void )
   uint8_t temp = ((*reg) & 0xF0) >> 4;
   (*reg) = ((*reg) << 4) | temp;
   
-  // flag Z
-  if( *reg == 0x00 )
-    SET_Z();
-  else
-    RESET_Z();
-  
-  // flag N
-  RESET_N();
-  
-  // flag H
-  RESET_H();
-  
   // flag C
   RESET_C();
   
-  state.pc += 2;
+  CB_COMMON(*reg);
 }
 
 static void CB_SWAP_HL( void )
@@ -2200,24 +1823,11 @@ static void CB_SWAP_HL( void )
   uint8_t temp = (data & 0xF0) >> 4;
   data = (data << 4) | temp;
   
-  // flag Z
-  if( data == 0x00 )
-    SET_Z();
-  else
-    RESET_Z();
-  
-  // flag N
-  RESET_N();
-  
-  // flag H
-  RESET_H();
-  
   // flag C
   RESET_C();
   
   write_byte(state.hl, data);
-  
-  state.pc += 2;
+  CB_COMMON(data);
 }
 
 static void CB_SRL_R( void )
@@ -2235,20 +1845,7 @@ static void CB_SRL_R( void )
     RESET_C();
   
   (*reg) = (*reg) >> 1;
-  
-  // flag Z
-  if( (*reg) == 0 )
-    SET_Z();
-  else
-    RESET_Z();
-  
-  // flag N
-  RESET_N();
-  
-  // flag H
-  RESET_H();
-  
-  state.pc += 2;
+  CB_COMMON(*reg);
 }
 
 static void CB_SRL_HL( void )
@@ -2264,20 +1861,7 @@ static void CB_SRL_HL( void )
   data = data >> 1;
   
   write_byte(state.hl, data);
-  
-  // flag Z
-  if( data == 0 )
-    SET_Z();
-  else
-    RESET_Z();
-  
-  // flag N
-  RESET_N();
-  
-  // flag H
-  RESET_H();
-  
-  state.pc += 2;
+  CB_COMMON(data);
 }
 
 static void CB_BIT_R( void )
@@ -2416,6 +2000,53 @@ static void CB_SET_B_HL( void )
   state.pc += 2;
 }
 
+static void CALL( void )
+{
+  // opcode CD
+  state.sp -= 2;
+  write_word(state.sp, state.pc+3);
+  state.pc = read_word(state.pc+1);
+}
+
+static void CALL_C( void )
+{
+  // opcode DC
+  if( ! ISSET_C() )
+  {
+    state.pc +=3;
+  }
+  else
+  {
+    CALL();
+  }
+}
+
+static void CALL_NC( void )
+{
+  // opcode D4
+  if( ISSET_C() )
+  {
+    state.pc +=3;
+  }
+  else
+  {
+    CALL();
+  }
+}
+
+static void CALL_NZ( void )
+{
+  // opcode C4
+  if( ISSET_Z() )
+  {
+    state.pc +=3;
+  }
+  else
+  {
+    CALL();
+  }
+}
+
 static void CALL_Z( void )
 {
   // opcode CC
@@ -2425,18 +2056,8 @@ static void CALL_Z( void )
   }
   else
   {
-    state.sp -= 2;
-    write_word(state.sp, state.pc+3);
-    state.pc = read_word(state.pc+1);
+    CALL();
   }
-}
-
-static void CALL( void )
-{
-  // opcode CD
-  state.sp -= 2;
-  write_word(state.sp, state.pc+3);
-  state.pc = read_word(state.pc+1);
 }
 
 static void ADC_A_BYTE( void )
@@ -2516,22 +2137,6 @@ static void RST_0( void )
   state.pc = 0x0000;
 }
 
-static void CALL_NC( void )
-{
-  // opcode D4
-  if( ISSET_C() )
-  {
-    state.pc +=3;
-  }
-  else
-  {
-    state.sp -= 2;
-    write_word(state.sp, state.pc+3);
-    
-    state.pc = read_word(state.pc+1);
-  }
-}
-
 static void PUSH_DE( void )
 {
   // opcode D5
@@ -2547,29 +2152,15 @@ static void SUB_A_BYTE( void )
   int temp = (int)(state.a) - (int)(arg);
   int old_a = state.a;
   state.a -= arg;
-  
-  // flag Z
-  if( state.a == 0 )
-    SET_Z();
-  else
-    RESET_Z();
-  
-  // flag N
-  SET_N();
+  state.pc++;
   
   // flag H
   if( ( (old_a & 0x0F) - (arg & 0x0F) ) & 0x10 )
     SET_H();
   else
     RESET_H();
-  
-  // flag C
-  if( temp < 0 )
-    SET_C();
-  else
-    RESET_C();
-  
-  state.pc += 2;
+
+  SUB_SBC_COMMON(temp);
 }
 
 static void RST_10( void )
@@ -2598,22 +2189,6 @@ static void JP_C_ADDR( void )
     return;
   }
   state.pc += 3;
-}
-
-static void CALL_C( void )
-{
-  // opcode DC
-  if( ! ISSET_C() )
-  {
-    state.pc +=3;
-  }
-  else
-  {
-    state.sp -= 2;
-    write_word(state.sp, state.pc+3);
-    
-    state.pc = read_word(state.pc+1);
-  }
 }
 
 static void SBC_A_BYTE( void )
@@ -2706,23 +2281,9 @@ static void AND_BYTE( void )
   // opcode E6
   uint8_t arg = read_byte(state.pc+1);
   state.a &= arg;
-  
-  //flag Z
-  if( state.a == 0)
-    SET_Z();
-  else
-    RESET_Z();
-  
-  // flag N
-  RESET_N();
-  
-  // flag H
-  SET_H();
-  
-  // flag C
-  RESET_C();
-  
-  state.pc += 2;
+  state.pc ++;
+
+  AND_OR_XOR_COMMON();
 }
 
 static void RST_20( void )
@@ -2796,22 +2357,9 @@ static void XOR_BYTE( void )
 {
   // opcode EE
   state.a ^= read_byte(state.pc+1);
-  // flag Z
-  if( state.a == 0 )
-    SET_Z();
-  else
-    RESET_Z();
-  
-  // flag N
-  RESET_N();
-  
-  // flag H
-  RESET_H();
-  
-  // flag C
-  RESET_C();
-  
-  state.pc += 2;
+  state.pc ++;
+
+  AND_OR_XOR_COMMON();
 }
 
 static void RST_28( void )
@@ -2872,23 +2420,9 @@ static void OR_BYTE( void )
 {
   // opcode F6
   state.a |= read_byte(state.pc+1);
-  
-  // flag Z
-  if( state.a == 0 )
-    SET_Z();
-  else
-    RESET_Z();
-  
-  // flag N
-  RESET_N();
-  
-  // flag H
-  RESET_H();
-  
-  // flag C
-  RESET_C();
-  
-  state.pc += 2;
+  state.pc ++;
+
+  AND_OR_XOR_COMMON();  
 }
 
 static void RST_30( void )

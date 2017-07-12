@@ -23,8 +23,6 @@
 
 void mbc_none_install()
 {
-  cart.cleanup = &mbc_none_cleanup;
-  
   int i;
   // cart bank zero
   for( i=0x00; i<=0x3F; ++i ) {
@@ -91,5 +89,3 @@ void mbc_none_write_extram( uint16_t address, uint8_t data ) {
   cart.extram_bank[address&0x1fff] = data;
 }
 
-void mbc_none_cleanup() {
-}

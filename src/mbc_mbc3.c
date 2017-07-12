@@ -22,8 +22,6 @@
 
 void mbc_mbc3_install()
 {
-  cart.cleanup = &mbc_mbc3_cleanup;
-  
   int i;
   // cart bank zero
   for( i=0x00; i<=0x3F; ++i ) {
@@ -188,5 +186,3 @@ uint8_t mbc_mbc3_read_rtc( uint16_t address ) {
 void mbc_mbc3_write_rtc( uint16_t address, uint8_t data ) {
 }
 
-void mbc_mbc3_cleanup() {
-}

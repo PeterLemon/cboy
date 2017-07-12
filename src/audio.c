@@ -12,10 +12,6 @@ void fill_audio( void *userdata, uint8_t *stream, int len )
 {
 }
 
-void audio_cleanup()
-{
-}
-
 uint8_t audio_read( uint16_t address )
 {
   return 0;

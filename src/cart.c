@@ -64,15 +64,10 @@ char* romname2savename( char* savename, char* romname, int savenamelength )
   return savename;
 }
 
-void cart_init( char* bootromName, char* cartromName )
-{
-  cart_init_file(bootromName, "n64chain");
-}
+void cart_init( void ) {
+  char *bootromName = NULL;
+  char *cartromName = "n64chain";
 
-void cart_init_file( char* bootromName, char* cartromName ) {
-  
-  cart.cleanup = &cart_default_cleanup;
-  
   // cart_init_cartrom also sets cart.savename
   cart_init_cartrom( cartromName );
   cart_init_bootrom( bootromName );
@@ -185,9 +180,6 @@ void cart_init_bootrom( char* bootromName )
  */
 void cart_reset_mbc()
 {
-  if( cart.cleanup != NULL )
-    cart.cleanup();
-  
   if( state.bootRomEnabled )
   {
     mbc_boot_install();
@@ -247,24 +239,3 @@ void cart_reset_mbc()
   }
 }
   
-void cart_cleanup()
-{
-  // call the mbc handler's cleanup function
-  cart.cleanup();
-  
-  // save the extram to disk
-  if( cart.battery_backed && (cart.extram_size > 0) )
-  {
-  }
-  
-  // free cartrom, bootrom, and extram
-  cart.cartrom = NULL;
-  //free( cart.bootrom );
-  cart.bootrom = NULL;
-  cart.extram = NULL;
-}
-
-void cart_default_cleanup()
-{
-  // do nothing
-}

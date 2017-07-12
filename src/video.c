@@ -27,8 +27,7 @@ static pixel_t pixmem[160*144] __attribute__((aligned(16)));
 static pixel_t colormem[160*144] __attribute__((aligned(16)));
 
 static pixel_t myPalette[8] __attribute__((aligned(16)));
-static pixel_t pixels[8] __attribute__((aligned(16)));
-static pixel_t colors[8] __attribute__((aligned(16)));
+static pixel_t pixelscolors[2][8] __attribute__((aligned(32)));
 
 static void vid_drawSpanCommon(int vramAddr, int x, int y, int vramBank,
         int xFlip, int *lineStart, int *spanStart, int *spanEnd) {
@@ -50,8 +49,8 @@ static void vid_drawSpanCommon(int vramAddr, int x, int y, int vramBank,
     }
 
     // pixel 7 at the left, pixel 0 at the right
-    __builtin_mips_cache(0xD, pixels);
-    __builtin_mips_cache(0xD, colors);
+    __builtin_mips_cache(0xD, pixelscolors[0]);
+    __builtin_mips_cache(0xD, pixelscolors[1]);
 
     int p;
     for( p=0; p<8; ++p )
@@ -64,8 +63,8 @@ static void vid_drawSpanCommon(int vramAddr, int x, int y, int vramBank,
             color = 1;
         if( highBits & mask )
             color += 2;
-        pixels[p] = myPalette[color];
-        colors[p] = color;
+        pixelscolors[0][p] = myPalette[color];
+        pixelscolors[1][p] = color;
     }
 
     __builtin_mips_cache(0x11, myPalette);
@@ -83,28 +82,39 @@ static void vid_drawSpanCommon(int vramAddr, int x, int y, int vramBank,
     // xFlip?
     if( xFlip )
     {
-        // Flip the span.
-        static pixel_t temp_pixels[8] __attribute__((aligned(16)));
-        static pixel_t temp_colors[8] __attribute__((aligned(16)));
+        uint32_t scratch1, scratch2;
 
-        __builtin_mips_cache(0xD, temp_pixels);
-        __builtin_mips_cache(0xD, temp_colors);
+        __asm__ __volatile__(
+          ".set noat\n\t"
+          ".set noreorder\n\t"
+          "1:\n\t"
+          "lw %0, 0x0(%2)\n\t"
+          "lw %1, 0xC(%2)\n\t"
+          "sh %0, 0xC(%2)\n\t"
+          "srl %0, %0, 0x8\n\t"
+          "sh %0, 0xE(%2)\n\t"
+          "sh %1, 0x0(%2)\n\t"
+          "srl %1, %1, 0x8\n\t"
+          "sh %1, 0x2(%2)\n\t"
+          "addiu %2, %2, 0x10\n\t"
 
-        int i;
-        for(i=0; i<8; ++i)
-        {
-            // Copy pixels to a temporary place, in reverse order.
-            temp_pixels[i] = pixels[7-i];
-            temp_colors[i] = colors[7-i];
-        }
-        for(i=0; i<8; ++i)
-        {
-            pixels[i] = temp_pixels[i];
-            colors[i] = temp_colors[i];
-        }
+          "lw %0, (0x4-0x10)(%2)\n\t"
+          "lw %1, (0x8-0x10)(%2)\n\t"
+          "sh %0, (0x8-0x10)(%2)\n\t"
+          "srl %0, %0, 0x8\n\t"
+          "sh %0, (0xA-0x10)(%2)\n\t"
+          "andi %0, %2, 0x20\n\t"
+          "sh %1, (0x4-0x10)(%2)\n\t"
+          "srl %1, %1, 0x8\n\t"
+          "sh %1, (0x6-0x10)(%2)\n\t"
+          "beq %0, $0, 1b\n\t"
+          "nop\n\t"
+          "addiu %2, %2, -0x20\n\t"
 
-        __builtin_mips_cache(0x11, temp_pixels);
-        __builtin_mips_cache(0x11, temp_colors);
+          : "=&r"(scratch1), "=&r"(scratch2) //, "=&r"(pixelscolors[0])
+          : "r"(pixelscolors[0])
+          : "memory"
+        );
     }
 }
 
@@ -150,31 +160,20 @@ static void vid_drawOpaqueSpan( uint8_t pal, uint16_t vramAddr, int x, int y, in
     vid_drawSpanCommon(vramAddr, x, y, vramBank, xFlip, &lineStart, &spanStart, &spanEnd);
 
     // Draw the span from left to right.
-    int p;
-    for( p=spanStart; p<=spanEnd; ++p )
-    {
-        pixmem[ lineStart + x + p ] = pixels[ 7-p ];
-    }
-    if( updateColormem )
-    {
-        for( p=spanStart; p<=(spanEnd-8); ++p )
-        {
-            unsigned idx = lineStart + x + p;
+    unsigned didx = lineStart + x + spanStart;
+    unsigned sidx = 7 - spanStart;
 
-            if (!(idx & 0x7)) {
-              __builtin_mips_cache(0xD, colormem + idx);
-            }
+    for( int p=spanStart; p<=spanEnd; ++p )
+    {
+        if( updateColormem ) {
+          colormem[ didx ] = pixelscolors[1][ sidx ];
+        }
 
-            colormem[ idx ] = colors[ 7-p ];
-        }
-        for( p=spanStart; p<=spanEnd; ++p )
-        {
-            colormem[ lineStart + x + p ] = colors[ 7-p ];
-        }
+        pixmem[ didx++ ] = pixelscolors[0][ sidx-- ];
     }
 
-    __builtin_mips_cache(0x11, pixels);
-    __builtin_mips_cache(0x11, colors);
+    __builtin_mips_cache(0x11, pixelscolors[0]);
+    __builtin_mips_cache(0x11, pixelscolors[1]);
 }
 
 static void vid_drawTransparentSpan( uint8_t pal, uint16_t vramAddr, int x, int y, int vramBank, int xFlip, int priority ) {
@@ -222,26 +221,26 @@ static void vid_drawTransparentSpan( uint8_t pal, uint16_t vramAddr, int x, int 
     int p;
     for( p=spanStart; p<=spanEnd; ++p )
     {
-        if( colors[7-p] != 0 )
+        if( pixelscolors[1][7-p] != 0 )
         {
             if( priority )
             {
                 if( colormem[ lineStart + x + p ] == 0 )
                 {
-                    pixmem[ lineStart + x + p ] = pixels[ 7-p ];
+                    pixmem[ lineStart + x + p ] = pixelscolors[0][ 7-p ];
                 } else {
                     // Uncomment the next line to highlight the
                     // sprite-behind-background case in bright red.
                     //           pixmem[ lineStart + x + p ] = 0x001f; // red
                 }
             } else {
-                pixmem[ lineStart + x + p ] = pixels[ 7-p ];
+                pixmem[ lineStart + x + p ] = pixelscolors[0][ 7-p ];
             }
         }
     }
 
-    __builtin_mips_cache(0x11, pixels);
-    __builtin_mips_cache(0x11, colors);
+    __builtin_mips_cache(0x11, pixelscolors[0]);
+    __builtin_mips_cache(0x11, pixelscolors[1]);
 }
 
 void vid_render_line()
