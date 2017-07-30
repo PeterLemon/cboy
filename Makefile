@@ -29,6 +29,7 @@ RSPASM = $(call FIXPATH,$(CURDIR)/../tools/bin/rspasm)
 
 CFLAGS = -Wall -std=c99 -Wno-main -fno-strict-aliasing \
 	-I../libn64/include -I../libn64 -I.
+
 OPTFLAGS = -Os -march=vr4300 -mabi=eabi -mgp32 -mlong32 \
 	-flto -ffat-lto-objects -ffunction-sections -fdata-sections \
 	-G4 -mno-extern-sdata -mgpopt

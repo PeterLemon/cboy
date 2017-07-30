@@ -26,10 +26,11 @@
 static pixel_t pixmem[160*144] __attribute__((aligned(16)));
 static pixel_t colormem[160*144] __attribute__((aligned(16)));
 
-static pixel_t myPalette[8] __attribute__((aligned(16)));
+static pixel_t myCachedPalettes[8][8] __attribute__((aligned(16)));
 static pixel_t pixelscolors[2][8] __attribute__((aligned(32)));
+static pixel_t myPalette[8] __attribute__((aligned(16)));
 
-static void vid_drawSpanCommon(int vramAddr, int x, int y, int vramBank,
+static void vid_drawSpanCommon(pixel_t *palette, int vramAddr, int x, int y, int vramBank,
         int xFlip, int *lineStart, int *spanStart, int *spanEnd) {
 
     *lineStart = 160 * y;
@@ -63,11 +64,9 @@ static void vid_drawSpanCommon(int vramAddr, int x, int y, int vramBank,
             color = 1;
         if( highBits & mask )
             color += 2;
-        pixelscolors[0][p] = myPalette[color];
+        pixelscolors[0][p] = palette[color];
         pixelscolors[1][p] = color;
     }
-
-    __builtin_mips_cache(0x11, myPalette);
 
     // Is the span partially offscreen?
     *spanStart = 0;
@@ -132,32 +131,8 @@ static void vid_drawOpaqueSpan( uint8_t pal, uint16_t vramAddr, int x, int y, in
     if((x-8)>160)
         return;
 
-    // Set up local palette.
-    // FIXME The names of these variables are fucking confusing
-    __builtin_mips_cache(0xD, myPalette);
-    if( state.caps & 0x04 )
-    {
-        // DMG mode
-        // colors need to be translated through BOTH the DMG and CGB palettes
-        myPalette[4] = state.bgpd[(pal*8)+0] + (state.bgpd[(pal*8)+1]<<8);
-        myPalette[5] = state.bgpd[(pal*8)+2] + (state.bgpd[(pal*8)+3]<<8);
-        myPalette[6] = state.bgpd[(pal*8)+4] + (state.bgpd[(pal*8)+5]<<8);
-        myPalette[7] = state.bgpd[(pal*8)+6] + (state.bgpd[(pal*8)+7]<<8);
-
-        myPalette[0] = myPalette[4 + ((state.bgp)      & 0x3) ];
-        myPalette[1] = myPalette[4 + ((state.bgp >> 2) & 0x3) ];
-        myPalette[2] = myPalette[4 + ((state.bgp >> 4) & 0x3) ];
-        myPalette[3] = myPalette[4 + ((state.bgp >> 6) & 0x3) ];
-    } else {
-        // CGB mode
-        myPalette[0] = state.bgpd[(pal*8)+0] + (state.bgpd[(pal*8)+1]<<8);
-        myPalette[1] = state.bgpd[(pal*8)+2] + (state.bgpd[(pal*8)+3]<<8);
-        myPalette[2] = state.bgpd[(pal*8)+4] + (state.bgpd[(pal*8)+5]<<8);
-        myPalette[3] = state.bgpd[(pal*8)+6] + (state.bgpd[(pal*8)+7]<<8);
-    }
-
     int lineStart, spanStart, spanEnd;
-    vid_drawSpanCommon(vramAddr, x, y, vramBank, xFlip, &lineStart, &spanStart, &spanEnd);
+    vid_drawSpanCommon(&myCachedPalettes[pal][0], vramAddr, x, y, vramBank, xFlip, &lineStart, &spanStart, &spanEnd);
 
     // Draw the span from left to right.
     unsigned didx = lineStart + x + spanStart;
@@ -189,33 +164,8 @@ static void vid_drawTransparentSpan( uint8_t pal, uint16_t vramAddr, int x, int 
     if((x-8)>160)
         return;
 
-    // Set up local palette.
-    // FIXME The names of these variables are fucking confusing
-    if( state.caps & 0x04 )
-    {
-        // DMG mode
-        // colors need to be translated through BOTH the DMG and CGB palettes
-        myPalette[4] = state.obpd[(pal*8)+0] + (state.obpd[(pal*8)+1]<<8);
-        myPalette[5] = state.obpd[(pal*8)+2] + (state.obpd[(pal*8)+3]<<8);
-        myPalette[6] = state.obpd[(pal*8)+4] + (state.obpd[(pal*8)+5]<<8);
-        myPalette[7] = state.obpd[(pal*8)+6] + (state.obpd[(pal*8)+7]<<8);
-
-        int dmgPalette = (pal==0) ? state.obp0 : state.obp1;
-
-        myPalette[0] = myPalette[4 + ((dmgPalette)      & 0x3) ];
-        myPalette[1] = myPalette[4 + ((dmgPalette >> 2) & 0x3) ];
-        myPalette[2] = myPalette[4 + ((dmgPalette >> 4) & 0x3) ];
-        myPalette[3] = myPalette[4 + ((dmgPalette >> 6) & 0x3) ];
-    } else {
-        // CGB mode
-        myPalette[0] = state.obpd[(pal*8)+0] + (state.obpd[(pal*8)+1]<<8);
-        myPalette[1] = state.obpd[(pal*8)+2] + (state.obpd[(pal*8)+3]<<8);
-        myPalette[2] = state.obpd[(pal*8)+4] + (state.obpd[(pal*8)+5]<<8);
-        myPalette[3] = state.obpd[(pal*8)+6] + (state.obpd[(pal*8)+7]<<8);
-    }
-
     int lineStart, spanStart, spanEnd;
-    vid_drawSpanCommon(vramAddr, x, y, vramBank, xFlip, &lineStart, &spanStart, &spanEnd);
+    vid_drawSpanCommon(&myCachedPalettes[pal][4], vramAddr, x, y, vramBank, xFlip, &lineStart, &spanStart, &spanEnd);
 
     // Draw the span from left to right.
     int p;
@@ -249,6 +199,54 @@ void vid_render_line()
     // We should probably blank the line instead...
     if( (state.lcdc & LCDC_LCD_ENABLE) == 0 )
         return;
+
+    // Set up cached palettes.
+    if( state.caps & 0x04 )
+    {
+        __builtin_mips_cache(0xD, myPalette);
+
+        // DMG mode
+        // colors need to be translated through BOTH the DMG and CGB palettes
+        for (int i = 0; i < 8; i++) {
+          __builtin_mips_cache(0xD, myCachedPalettes[i]);
+
+          myPalette[4] = state.bgpd[(i*8)+0] + (state.bgpd[(i*8)+1]<<8);
+          myPalette[5] = state.bgpd[(i*8)+2] + (state.bgpd[(i*8)+3]<<8);
+          myPalette[6] = state.bgpd[(i*8)+4] + (state.bgpd[(i*8)+5]<<8);
+          myPalette[7] = state.bgpd[(i*8)+6] + (state.bgpd[(i*8)+7]<<8);
+
+          myCachedPalettes[i][0] = myPalette[4 + ((state.bgp)      & 0x3) ];
+          myCachedPalettes[i][1] = myPalette[4 + ((state.bgp >> 2) & 0x3) ];
+          myCachedPalettes[i][2] = myPalette[4 + ((state.bgp >> 4) & 0x3) ];
+          myCachedPalettes[i][3] = myPalette[4 + ((state.bgp >> 6) & 0x3) ];
+
+          myPalette[4] = state.obpd[(i*8)+0] + (state.obpd[(i*8)+1]<<8);
+          myPalette[5] = state.obpd[(i*8)+2] + (state.obpd[(i*8)+3]<<8);
+          myPalette[6] = state.obpd[(i*8)+4] + (state.obpd[(i*8)+5]<<8);
+          myPalette[7] = state.obpd[(i*8)+6] + (state.obpd[(i*8)+7]<<8);
+
+          int dmgPalette = (i==0) ? state.obp0 : state.obp1;
+
+          myCachedPalettes[i][4] = myPalette[4 + ((dmgPalette)      & 0x3) ];
+          myCachedPalettes[i][5] = myPalette[4 + ((dmgPalette >> 2) & 0x3) ];
+          myCachedPalettes[i][6] = myPalette[4 + ((dmgPalette >> 4) & 0x3) ];
+          myCachedPalettes[i][7] = myPalette[4 + ((dmgPalette >> 6) & 0x3) ];
+        }
+    } else {
+        // CGB mode
+        for (int i = 0; i < 8; i++) {
+          __builtin_mips_cache(0xD, myCachedPalettes[i]);
+
+          myCachedPalettes[i][0] = state.bgpd[(i*8)+0] + (state.bgpd[(i*8)+1]<<8);
+          myCachedPalettes[i][1] = state.bgpd[(i*8)+2] + (state.bgpd[(i*8)+3]<<8);
+          myCachedPalettes[i][2] = state.bgpd[(i*8)+4] + (state.bgpd[(i*8)+5]<<8);
+          myCachedPalettes[i][3] = state.bgpd[(i*8)+6] + (state.bgpd[(i*8)+7]<<8);
+          myCachedPalettes[i][4] = state.obpd[(i*8)+0] + (state.obpd[(i*8)+1]<<8);
+          myCachedPalettes[i][5] = state.obpd[(i*8)+2] + (state.obpd[(i*8)+3]<<8);
+          myCachedPalettes[i][6] = state.obpd[(i*8)+4] + (state.obpd[(i*8)+5]<<8);
+          myCachedPalettes[i][7] = state.obpd[(i*8)+6] + (state.obpd[(i*8)+7]<<8);
+        }
+    }
 
     int backLineToRender = ((int)state.ly + (int)state.scy) % 256;
     int backTileRow = backLineToRender / 8;
@@ -430,7 +428,7 @@ void vid_render_line()
 
 // These pre-defined values are suitable for NTSC.
 // TODO: Add support for PAL and PAL-M televisions.
-static vi_state_t vi_state = {
+static const vi_state_t vi_state = {
   0x0000324E, // status
   0x00200000, // origin
   0x00000140, // width
