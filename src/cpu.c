@@ -21,6 +21,7 @@
 #include "video.h"
 #include "serial.h"
 
+static void (*ops[0x100])(void) __attribute__((aligned(16)));
 struct state_s state;
 int branched= 0;
 
@@ -29,8 +30,8 @@ int branched= 0;
 // The op length and timing tables are taken from Shay Green's
 // instruction timing tests.
 
-// Instruction times.
-static const int op_times[0x100] __attribute__((aligned(16))) = {
+// Instruction times (not taken, taken)
+static const int op_times[2][0x100] __attribute__((aligned(16))) = {{
 	1,3,2,2,1,1,2,1,5,2,2,2,1,1,2,1,
 	0,3,2,2,1,1,2,1,3,2,2,2,1,1,2,1,
 	2,3,2,2,1,1,2,1,2,2,2,2,1,1,2,1,
@@ -47,10 +48,8 @@ static const int op_times[0x100] __attribute__((aligned(16))) = {
 	2,3,3,0,3,4,2,4,2,4,3,0,3,0,2,4,
 	3,3,2,0,0,4,2,4,4,1,4,0,0,0,2,4,
 	3,3,2,1,0,4,2,4,3,2,4,1,0,0,2,4
-};
-
-// Instruction times when conditionals are taken.
-static const int op_times_taken[0x100] __attribute__((aligned(16))) = {
+},
+{
 	1,3,2,2,1,1,2,1,5,2,2,2,1,1,2,1,
 	0,3,2,2,1,1,2,1,3,2,2,2,1,1,2,1,
 	3,3,2,2,1,1,2,1,3,2,2,2,1,1,2,1,
@@ -67,7 +66,7 @@ static const int op_times_taken[0x100] __attribute__((aligned(16))) = {
 	5,3,4,0,6,4,2,4,5,4,4,0,6,0,2,4,
 	3,3,2,0,0,4,2,4,4,1,4,0,0,0,2,4,
 	3,3,2,1,0,4,2,4,3,2,4,1,0,0,2,4
-};
+}};
 
 // Instruction times for CB-prefixed instructions.
 static const int op_cb_times[0x100] = {
@@ -105,12 +104,12 @@ LD(l,h);LD(l,l);LD(l,a);
 LD(a,b);LD(a,c);LD(a,d);LD(a,e);
 LD(a,h);LD(a,l);LD(a,a);
 
-static void trash_OAM( void )
+void trash_OAM( void )
 {
     int i;
     if( state.lcdc & LCDC_LCD_ENABLE )
       for(i=0x08; i<=0x9F; ++i)
-        oam[i] = rand()%0xFF;
+        oam[i] = i;//rand()%0xFF;
 }
 
 __attribute__((cold))
@@ -986,7 +985,16 @@ static void LD_HL_R( void )
 static void HALT( void )
 {
   // opcode 76
-  
+
+  // Got called again after halting
+  if( state.halt_glitch == 1 )
+  {
+    state.halt_glitch = 0;
+    state.op = read_byte(state.pc+1);
+    ops[state.op]();
+    return;
+  }
+
   // emulate the halt bug. not sure if this
   // should happen on CGB or not.
   if( state.ime == IME_DISABLED )
@@ -2611,15 +2619,6 @@ static void (*cb_ops[0x100])(void) __attribute__((aligned(16))) = {
   /* FC */ CB_SET_B_R, 	CB_SET_B_R,	CB_SET_B_HL,	CB_SET_B_R
 };
 
-static void CB_PREFIX( void )
-{
-  // opcode CB
-  // lots of instructions use the CB prefix
-//   printf("CB_PREFIX\n");
-  cb_ops[state.cb_op]();
-  return;
-}
-
 static void (*ops[0x100])(void) __attribute__((aligned(16))) = {
   /* 00 */ NOP, 	LD_BC_WORD,	LD_BC_A,	INC_BC,
   /* 04 */ INC_R, 	DEC_R, 		LD_B_BYTE,	RLCA, 
@@ -2671,7 +2670,7 @@ static void (*ops[0x100])(void) __attribute__((aligned(16))) = {
   /* BC */ CP_R, 	CP_R,		CP_HL, 		CP_R,
   /* C0 */ RET_CC,	POP_BC,		JP_NZ_ADDR,	JP_ADDR,
   /* C4 */ CALL_NZ, 	PUSH_BC,	ADD_A_BYTE,	RST_0,
-  /* C8 */ RET_CC, 	RET,		JP_Z_ADDR,	CB_PREFIX,
+  /* C8 */ RET_CC, 	RET,		JP_Z_ADDR,	NULL,
   /* CC */ CALL_Z, 	CALL,		ADC_A_BYTE,	RST_8,
   /* D0 */ RET_CC, 	POP_DE,		JP_NC_ADDR,	LOCKUP,
   /* D4 */ CALL_NC, 	PUSH_DE,	SUB_A_BYTE, 	RST_10,
@@ -2779,6 +2778,86 @@ void cpu_do_one_frame()
   
 }
 
+static void cpu_do_nothing( void )
+{
+}
+
+static void cpu_do_imask_vblank( void )
+{
+  state.ime = IME_DISABLED;
+  state.iflag &= ~IMASK_VBLANK;
+  state.sp -= 2;
+  write_word(state.sp, state.pc);
+  state.pc = 0x0040;
+}
+
+static void cpu_do_imask_lcd_stat( void )
+{
+  state.ime = IME_DISABLED;
+  uint8_t i;
+  for(i=7;i>=0;--i)
+    if(state.pending_stat_interrupts & 1<<i)
+    {
+      state.pending_stat_interrupts &= ~(1<<i);
+      break;
+    }
+  if(state.pending_stat_interrupts == 0)
+    state.iflag &= ~IMASK_LCD_STAT;
+  state.sp -= 2;
+  write_word(state.sp, state.pc);
+  state.pc = 0x0048;
+}
+
+static void cpu_do_imask_timer( void )
+{
+  state.ime = IME_DISABLED;
+  state.iflag &= ~IMASK_TIMER;
+  state.sp -= 2;
+  write_word(state.sp, state.pc);
+  state.pc = 0x0050;
+}
+
+static void cpu_do_imask_serial( void )
+{
+  state.ime = IME_DISABLED;
+  state.iflag &= ~IMASK_SERIAL;
+  state.sp -= 2;
+  write_word(state.sp, state.pc);
+  state.pc = 0x0058;
+}
+
+static void cpu_do_imask_joypad( void )
+{
+  state.ime = IME_DISABLED;
+  state.iflag &= ~IMASK_JOYPAD;
+  state.sp -= 2;
+  write_word(state.sp, state.pc);
+  state.pc = 0x0060;
+}
+
+typedef void (*cpu_interrupt_handler)(void);
+static const cpu_interrupt_handler cpu_interrupt_handlers[] = {
+  cpu_do_nothing,
+
+  cpu_do_imask_vblank,
+
+  cpu_do_imask_lcd_stat, cpu_do_imask_vblank,
+
+  cpu_do_imask_timer, cpu_do_imask_vblank,
+    cpu_do_imask_lcd_stat, cpu_do_imask_vblank,
+
+  cpu_do_imask_serial, cpu_do_imask_vblank, cpu_do_imask_lcd_stat,
+    cpu_do_imask_vblank, cpu_do_imask_timer, cpu_do_imask_vblank,
+    cpu_do_imask_lcd_stat, cpu_do_imask_vblank,
+
+  cpu_do_imask_joypad, cpu_do_imask_vblank, cpu_do_imask_lcd_stat,
+    cpu_do_imask_vblank, cpu_do_imask_timer, cpu_do_imask_vblank,
+    cpu_do_imask_lcd_stat, cpu_do_imask_vblank, cpu_do_imask_serial,
+    cpu_do_imask_vblank, cpu_do_imask_lcd_stat, cpu_do_imask_vblank,
+    cpu_do_imask_timer, cpu_do_imask_vblank, cpu_do_imask_lcd_stat,
+    cpu_do_imask_vblank
+};
+
 // Run.
 __attribute__((hot))
 void cpu_do_one_instruction()
@@ -2787,110 +2866,43 @@ void cpu_do_one_instruction()
   // Handle pending interrupts.
   
   // Is an interrupt pending?
+  int pending_interrupt = state.ie & state.iflag;
+
   if( (state.ie & state.iflag) != 0x00 )
   {
     // Un-halt
     state.halt = 0;
-  }
-  
-  int pendingInterrupts = state.ime & state.ie & state.iflag;
-  if( pendingInterrupts != 0x00 )
-  {
-//     printf("ICHECK, ime: %02X, iflag: %02X, ie: %02X, pendingInterrupts: %02X\n", state.ime, state.iflag, state.ie, pendingInterrupts);
-    state.ime = IME_DISABLED;
-    if( pendingInterrupts & IMASK_VBLANK )
-    {
-//       printf("VBLANK, iflag: %02X, ie: %02X\n", state.iflag, state.ie);
-      state.iflag &= ~IMASK_VBLANK;
-      state.sp -= 2;
-      write_word(state.sp, state.pc);
-      state.pc = 0x0040;
-    }
-    else if( pendingInterrupts & IMASK_LCD_STAT )
-    {
-//       printf("LCD_STAT, iflag: %02X, ie: %02X, stat: %02X, ly: %d, lyc: %d\n", state.iflag, state.ie, state.stat, state.ly, state.lyc);
-      // get rid of the interrupt with highest priority
-      uint8_t i;
-      for(i=7;i>=0;--i)
-        if(state.pending_stat_interrupts & 1<<i)
-        {
-          state.pending_stat_interrupts &= ~(1<<i);
-//           printf("dequeued interrupt 0x%02x, remaining: 0x%02x\n", (1<<i), state.pending_stat_interrupts);
-          break;
-        }
-      if(state.pending_stat_interrupts == 0)
-        state.iflag &= ~IMASK_LCD_STAT;
-      state.sp -= 2;
-      write_word(state.sp, state.pc);
-      state.pc = 0x0048;
-    }
-    else if( pendingInterrupts & IMASK_TIMER )
-    {
-//       printf("TIMER, iflag: %02X, ie: %02X\n", state.iflag, state.ie);
-      state.iflag &= ~IMASK_TIMER;
-      state.sp -= 2;
-      write_word(state.sp, state.pc);
-      state.pc = 0x0050;
-    }
-    else if( pendingInterrupts & IMASK_SERIAL )
-    {
-//       printf("SERIAL, iflag: %02X, ie: %02X\n", state.iflag, state.ie);
-      state.iflag &= ~IMASK_SERIAL;
-      state.sp -= 2;
-      write_word(state.sp, state.pc);
-      state.pc = 0x0058;
-    }
-    else if( pendingInterrupts & IMASK_JOYPAD )
-    {
-//       printf("JOYPAD, iflag: %02X, ie: %02X\n", state.iflag, state.ie);
-      state.iflag &= ~IMASK_JOYPAD;
-      state.sp -= 2;
-      write_word(state.sp, state.pc);
-      state.pc = 0x0060;
+
+    if (state.ime) {
+      cpu_interrupt_handlers[pending_interrupt]();
     }
   }
-  
-  state.instr_time = 0;
+
 //   int instr_length = 0;
   
   // Fetch one instruction.
+  void (*op)(void);
+
   state.op = read_byte(state.pc);
 //   printf("%04x %02x\n", state.pc, state.op);
-  if( state.op == 0xCB )
-    state.cb_op = read_byte(state.pc+1);
-  
-  // Set instruction time (in cycles).
   if( state.op == 0xCB ) {
+    state.cb_op = read_byte(state.pc+1);
     state.instr_time = op_cb_times[state.cb_op];
+    op = cb_ops[state.cb_op];
   }
   else
   {
-    if( branched )
-    {
-      branched = 0;
-      state.instr_time = op_times_taken[state.op];
-    }
-    else
-    {
-      state.instr_time = op_times[state.op];
-    }
+    state.instr_time = op_times[branched][state.op];
+    op = ops[state.op];
+    branched = 0;
   }
   
-  // Execute the instruction.
-  
+  // Execute the instruction.  
   if(state.halt == 0)
   {
     //assert("Op address in range", state.pc <= 0xFFFE);
-    if( state.halt_glitch == 1 )
-    {
-      state.halt_glitch = 0;
-      state.op = read_byte(state.pc+1);
-      ops[state.op]();
-    }
-    else
-    {
-      ops[state.op]();
-    }
+    op();
+
     // Reset the unused bits in the flags register
     state.f &= 0xF0;
   }
@@ -2915,17 +2927,20 @@ void cpu_do_one_instruction()
     state.ly = 0;
   
   // Check LYC.
-  if( (state.ly == state.lyc) && (state.ly != state.last_ly) )
+  if(state.ly == state.lyc)
   {
-    state.stat |= LCD_STAT_COINCIDENCE;	// coincidence flag
-    if( state.stat & LCD_STAT_LYC_INT_ENABLED )
+    if (state.ly != state.last_ly)
     {
-      state.iflag |= IMASK_LCD_STAT;
-      state.pending_stat_interrupts |= LCD_STAT_COINCIDENCE;
-//       printf("setting IMASK_LCD_STAT (coincidence)\n");
+      state.stat |= LCD_STAT_COINCIDENCE;	// coincidence flag
+      if( state.stat & LCD_STAT_LYC_INT_ENABLED )
+      {
+        state.iflag |= IMASK_LCD_STAT;
+        state.pending_stat_interrupts |= LCD_STAT_COINCIDENCE;
+//        printf("setting IMASK_LCD_STAT (coincidence)\n");
+      }
     }
   }
-  else if (state.ly != state.lyc)
+  else
   {
     state.stat &= ~LCD_STAT_COINCIDENCE;
   }
