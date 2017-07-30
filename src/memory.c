@@ -556,9 +556,11 @@ void write_special( uint16_t address, uint8_t data ) {
       state.bgp = data;
       break;
     case ADDR_OBP0:
+      inval_palette = 1;
       state.obp0 = data;
       break;
     case ADDR_OBP1:
+      inval_palette = 1;
       state.obp1 = data;
       break;
     case ADDR_WX:
@@ -568,6 +570,7 @@ void write_special( uint16_t address, uint8_t data ) {
       state.wy = data;
       break;
     case ADDR_CAPS:
+      inval_palette = 1;
       state.caps = data;
       break;
     case ADDR_KEY1:
@@ -629,6 +632,7 @@ void write_special( uint16_t address, uint8_t data ) {
       state.bgpi = data;
       break;
     case ADDR_BGPD:
+      inval_palette = 1;
       state.bgpd[ state.bgpi & 0x3F ] = data;
       if( state.bgpi & 0x80 )
 	state.bgpi = 0x80 + ((state.bgpi + 1) & 0x3F);
@@ -638,6 +642,7 @@ void write_special( uint16_t address, uint8_t data ) {
       break;
     case ADDR_OBPD:
 //       printf("Wrote OBPD.\n");
+      inval_palette = 1;
       state.obpd[ state.obpi & 0x3F ] = data;
       if( state.obpi & 0x80 )
 	state.obpi = 0x80 + ((state.obpi + 1) & 0x3F);

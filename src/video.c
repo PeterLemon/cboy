@@ -29,6 +29,7 @@ static pixel_t colormem[160*144] __attribute__((aligned(16)));
 static pixel_t myCachedPalettes[8][8] __attribute__((aligned(16)));
 static pixel_t pixelscolors[2][8] __attribute__((aligned(32)));
 static pixel_t myPalette[8] __attribute__((aligned(16)));
+char inval_palette = 1;
 
 __attribute__((hot))
 static int vid_drawSpanCommon(pixel_t *palette, int vramAddr, int x, int y, int vramBank,
@@ -196,6 +197,7 @@ void vid_render_line()
         return;
 
     // Set up cached palettes.
+    if ( inval_palette ) {
     if( state.caps & 0x04 )
     {
         __builtin_mips_cache(0xD, myPalette);
@@ -241,6 +243,8 @@ void vid_render_line()
           myCachedPalettes[i][6] = state.obpd[(i*8)+4] + (state.obpd[(i*8)+5]<<8);
           myCachedPalettes[i][7] = state.obpd[(i*8)+6] + (state.obpd[(i*8)+7]<<8);
         }
+    }
+    inval_palette = 0;
     }
 
     int backLineToRender = ((int)state.ly + (int)state.scy) % 256;
