@@ -423,7 +423,7 @@ void cpu_set_flags_register( uint8_t );
 
 extern int stop;
 extern int op_lengths[0x100];
-extern int op_times[0x100];
+extern int op_times[2][0x100];
 extern int op_cb_times[0x100];
 
 #ifdef __cplusplus

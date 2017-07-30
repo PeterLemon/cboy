@@ -26,7 +26,6 @@
 extern "C" {
 #endif
 
-extern uint8_t  read_byte( uint16_t address );
 extern uint16_t read_word( uint16_t address );
 extern void     write_byte( uint16_t address, uint8_t  data );
 extern void     write_word( uint16_t address, uint16_t data );
@@ -190,6 +189,10 @@ void write_special( uint16_t address, uint8_t data );
 // out of bounds
 uint8_t read_out_of_bounds( uint16_t address );
 void write_out_of_bounds( uint16_t address, uint8_t data );
+
+static inline uint8_t read_byte( uint16_t address ) {
+  return readmem[address>>8](address);
+}
 
 #ifdef __cplusplus
 }

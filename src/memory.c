@@ -715,10 +715,6 @@ void vm_add( uint16_t address, int c )
   visual_memory[address] = (nr << 16) + (ng << 8) + nb ;
 }
 
-uint8_t read_byte( uint16_t address ) {
-  return readmem[address>>8](address);
-}
-
 void write_byte( uint16_t address, uint8_t data ) {
   writemem[address>>8](address, data);
 }
