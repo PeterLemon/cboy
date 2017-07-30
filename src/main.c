@@ -29,6 +29,7 @@
 
 int pause = 0;
 
+__attribute__((cold))
 void main() {
     mem_init();
     audio_init();

@@ -26,6 +26,7 @@ uint8_t mbc1_ram_bank;
 uint8_t mbc1_mode_select;
 uint8_t mbc1_ram_enable;
 
+__attribute__((cold))
 void mbc_mbc1_install()
 {
   int i;

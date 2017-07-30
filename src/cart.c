@@ -64,6 +64,7 @@ char* romname2savename( char* savename, char* romname, int savenamelength )
   return savename;
 }
 
+__attribute__((cold))
 void cart_init( void ) {
   char *bootromName = NULL;
   char *cartromName = "n64chain";
@@ -143,6 +144,7 @@ void cart_init( void ) {
   
 }
 
+__attribute__((cold))
 void cart_init_cartrom( char* cartromName )
 {
   extern uint8_t __cartrom[];
@@ -167,6 +169,7 @@ void cart_init_cartrom( char* cartromName )
   romname2savename( cart.savename, cartromName, 256 );
 }
 
+__attribute__((cold))
 void cart_init_bootrom( char* bootromName )
 {
   cart.bootromsize = bootrom_bin_len;
@@ -178,6 +181,7 @@ void cart_init_bootrom( char* bootromName )
  * This function installs the appropriate handlers
  * for the current MBC.
  */
+__attribute__((cold))
 void cart_reset_mbc()
 {
   if( state.bootRomEnabled )

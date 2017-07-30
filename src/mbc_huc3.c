@@ -23,6 +23,7 @@
 
 int huc3_ram_mode = 0;
 
+__attribute__((cold))
 void mbc_huc3_install()
 {
   cart.huc3_ram_mode = 0;

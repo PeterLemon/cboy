@@ -21,6 +21,7 @@
 #include "mbc_none.h"
 
 
+__attribute__((cold))
 void mbc_none_install()
 {
   int i;

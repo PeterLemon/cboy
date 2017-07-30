@@ -20,6 +20,7 @@
 #include "cart.h"
 #include "mbc_mbc3.h"
 
+__attribute__((cold))
 void mbc_mbc3_install()
 {
   int i;

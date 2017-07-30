@@ -6,6 +6,7 @@
 extern "C" {
 #endif
 
+__attribute__((cold))
 int audio_init();
 uint8_t audio_read( uint16_t address );
 void audio_write( uint16_t address, uint8_t data );

@@ -22,6 +22,7 @@
 
 int cam_mode;   // 0=RAM accessible, 1=CAM registers accessible
 
+__attribute__((cold))
 void mbc_cam_install()
 {
   int i;

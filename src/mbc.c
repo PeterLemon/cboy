@@ -26,6 +26,7 @@
  * Given the romSize byte from the cart header, returns
  * the size of the rom.
  */
+__attribute__((cold))
 int mbc_romSize2numBanks( uint8_t romSize )
 {
   static const unsigned lut[] __attribute__((aligned(16))) = {
@@ -52,6 +53,7 @@ int mbc_romSize2numBanks( uint8_t romSize )
   }
 }
 
+__attribute__((cold))
 int mbc_ramSize2numBytes( uint8_t ramSize )
 {
   static const unsigned lut[] __attribute__((aligned(16))) = {

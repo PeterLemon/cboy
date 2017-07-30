@@ -40,6 +40,7 @@ uint8_t hram[0x7F];		// FF80-FFFE
 uint8_t (*readmem[0x101])(uint16_t address);
 void (*writemem[0x101])(uint16_t address, uint8_t data);
 
+__attribute__((cold))
 void mem_init( void ) {
   int i;
   

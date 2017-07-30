@@ -3,6 +3,7 @@
 const int sample_rate = 48000;
 void fill_audio( void *userdata, uint8_t *stream, int len );
 
+__attribute__((cold))
 int audio_init()
 {
   return 0;

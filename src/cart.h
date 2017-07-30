@@ -56,12 +56,14 @@ struct cart_s {
 #define MAX_CARTROM_SIZE	8388608
 #define MAX_BOOTROM_SIZE	2304
 
+__attribute__((cold))
 extern void cart_init( void );
-void cart_init_file( char* boot_rom, char* rom );
-void cart_init_chardev( char* boot_rom, char* rom );
 extern void cart_disable_bootrom( void );
+__attribute__((cold))
 void cart_init_cartrom( char* cartromName );
+__attribute__((cold))
 void cart_init_bootrom( char* bootromName );
+__attribute__((cold))
 extern void cart_reset_mbc( void );
 extern struct cart_s cart;
 

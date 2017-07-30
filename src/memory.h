@@ -142,6 +142,7 @@ extern uint8_t oam[0xA0];
 extern uint8_t hram[0x7F];
 
 
+__attribute__((cold))
 void mem_init( void );
 
 // nothing

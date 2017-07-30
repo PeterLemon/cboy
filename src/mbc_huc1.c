@@ -26,6 +26,7 @@ uint8_t huc1_ram_bank;
 uint8_t huc1_mode_select;
 uint8_t huc1_ram_enable;
 
+__attribute__((cold))
 void mbc_huc1_install()
 {
   int i;

@@ -31,6 +31,7 @@
 #ifndef _MBC_H_
 #define _MBC_H_
 
+__attribute__((cold))
 extern int mbc_romSize2numBanks( uint8_t romSize );
 
 #endif // _MBC_H_
