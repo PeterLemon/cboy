@@ -146,7 +146,9 @@ __attribute__((cold))
 void mem_init( void );
 
 // nothing
+__attribute__((cold))
 uint8_t read_nothing( uint16_t address );
+__attribute__((cold))
 void write_nothing( uint16_t address, uint8_t data );
 
 // cart bank zero
@@ -185,11 +187,15 @@ uint8_t read_oam( uint16_t address );
 void write_oam( uint16_t address, uint8_t data );
 
 // special
+__attribute__((cold))
 uint8_t read_special( uint16_t address );
+__attribute__((cold))
 void write_special( uint16_t address, uint8_t data );
 
 // out of bounds
+__attribute__((cold))
 uint8_t read_out_of_bounds( uint16_t address );
+__attribute__((cold))
 void write_out_of_bounds( uint16_t address, uint8_t data );
 
 #ifdef __cplusplus

@@ -18,10 +18,15 @@
 
 #ifndef _MBC_BOOT_H_
 #define _MBC_BOOT_H_
+__attribute__((cold))
 void mbc_boot_install();
+__attribute__((cold))
 extern uint8_t mbc_boot_read_bank_0( uint16_t address );
+__attribute__((cold))
 extern void mbc_boot_write_bank_0( uint16_t address, uint8_t data );
+__attribute__((cold))
 extern uint8_t mbc_boot_read_bank_n( uint16_t address );
+__attribute__((cold))
 extern void mbc_boot_write_bank_n( uint16_t address, uint8_t data );
 
 #endif // _MBC_BOOT_H_

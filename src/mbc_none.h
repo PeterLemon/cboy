@@ -20,13 +20,22 @@
 #define _MBC_NONE_H_
 __attribute__((cold))
 extern void mbc_none_install();
+__attribute__((cold))
 uint8_t mbc_none_read_ff( uint16_t address );
+__attribute__((cold))
 uint8_t mbc_none_read_bank_0( uint16_t address );
+__attribute__((cold))
 uint8_t mbc_none_read_bank_n( uint16_t address );
+__attribute__((cold))
 uint8_t mbc_none_read_extram( uint16_t address );
+__attribute__((cold))
 void mbc_none_write_dummy( uint16_t address, uint8_t data );
+__attribute__((cold))
 void mbc_none_write_bank_0( uint16_t address, uint8_t data );
+__attribute__((cold))
 void mbc_none_write_bank_n( uint16_t address, uint8_t data );
+__attribute__((cold))
 void mbc_none_write_extram( uint16_t address, uint8_t data );
+__attribute__((cold))
 void mbc_none_cleanup();
 #endif // _MBC_NONE_H_

@@ -88,12 +88,14 @@ void mem_init( void ) {
 }
 
 // nothing
+__attribute__((cold))
 uint8_t read_nothing( uint16_t address ) {
   // TODO
   exit(1);
   return 0;
 }
 
+__attribute__((cold))
 void write_nothing( uint16_t address, uint8_t data ) {
   // TODO
   exit(1);
@@ -663,12 +665,14 @@ void write_special( uint16_t address, uint8_t data ) {
 }
 
 // out of bounds - results in a crash
+__attribute__((cold))
 uint8_t read_out_of_bounds( uint16_t address )
 {
   exit(1);
   return 0;
 }
 
+__attribute__((cold))
 void write_out_of_bounds( uint16_t address, uint8_t data )
 {
   exit(1);

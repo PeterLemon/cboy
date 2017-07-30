@@ -259,6 +259,8 @@ typedef enum {
 
 int cpu_init( void );
 void cpu_do_one_instruction( void );
+
+__attribute__((hot))
 void cpu_do_one_frame( void );
 uint8_t* cpu_getReg( int );
 uint8_t cpu_get_flags_register( void );

@@ -20,14 +20,24 @@
 #define _MBC_MBC7_H_
 __attribute__((cold))
 extern void mbc_mbc7_install();
+__attribute__((cold))
 uint8_t mbc_mbc7_read_ff( uint16_t address );
+__attribute__((cold))
 uint8_t mbc_mbc7_read_bank_0( uint16_t address );
+__attribute__((cold))
 uint8_t mbc_mbc7_read_bank_n( uint16_t address );
+__attribute__((cold))
 uint8_t mbc_mbc7_read_extram( uint16_t address );
+__attribute__((cold))
 void mbc_mbc7_write_dummy( uint16_t address, uint8_t data );
+__attribute__((cold))
 void mbc_mbc7_write_ram_enable( uint16_t address, uint8_t data );
+__attribute__((cold))
 void mbc_mbc7_write_rom_bank_select( uint16_t address, uint8_t data );
+__attribute__((cold))
 void mbc_mbc7_write_ram_bank_select( uint16_t address, uint8_t data );
+__attribute__((cold))
 void mbc_mbc7_write_extram( uint16_t address, uint8_t data );
+__attribute__((cold))
 void mbc_mbc7_cleanup();
 #endif // _MBC_MBC7_H_

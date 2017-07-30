@@ -29,6 +29,20 @@
 
 int pause = 0;
 
+__attribute__((hot)) __attribute__((noinline))
+static void spin() {
+  while (1) {
+        vid_waitForNextFrame();
+        input_handle();
+        if( !pause )
+        {
+            cpu_do_one_frame();
+            vid_frame();
+            audio_frame();
+        }
+  }
+}
+
 __attribute__((cold))
 void main() {
     mem_init();
@@ -40,17 +54,7 @@ void main() {
     cart_init();
     vid_init();
     input_init();
-    while( 1 )
-    {
-        vid_waitForNextFrame();
-        input_handle();
-        if( !pause )
-        {
-            cpu_do_one_frame();
-            vid_frame();
-            audio_frame();
-        }
-    }
+    spin();
     __builtin_unreachable();
 }
 

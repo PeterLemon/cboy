@@ -30,8 +30,20 @@ static pixel_t myCachedPalettes[8][8] __attribute__((aligned(16)));
 static pixel_t pixelscolors[2][8] __attribute__((aligned(32)));
 static pixel_t myPalette[8] __attribute__((aligned(16)));
 
-static void vid_drawSpanCommon(pixel_t *palette, int vramAddr, int x, int y, int vramBank,
+__attribute__((hot))
+static int vid_drawSpanCommon(pixel_t *palette, int vramAddr, int x, int y, int vramBank,
         int xFlip, int *lineStart, int *spanStart, int *spanEnd) {
+
+    // Is this span off the left of the screen?
+    if(x<-7)
+        return 1;
+
+    // Is this span off the top of the screen?
+    if(y<0)
+        return 1;
+
+    if((x-8)>160)
+        return 1;
 
     *lineStart = 160 * y;
     //   uint32_t *pixmem = (uint32_t*) screen->pixels;
@@ -115,24 +127,16 @@ static void vid_drawSpanCommon(pixel_t *palette, int vramAddr, int x, int y, int
           : "memory"
         );
     }
+
+    return 0;
 }
 
 
+__attribute__((hot))
 static void vid_drawOpaqueSpan( uint8_t pal, uint16_t vramAddr, int x, int y, int vramBank, int xFlip, int updateColormem ) {
-
-    // Is this span off the left of the screen?
-    if(x<-7)
-        return;
-
-    // Is this span off the top of the screen?
-    if(y<0)
-        return;
-
-    if((x-8)>160)
-        return;
-
     int lineStart, spanStart, spanEnd;
-    vid_drawSpanCommon(&myCachedPalettes[pal][0], vramAddr, x, y, vramBank, xFlip, &lineStart, &spanStart, &spanEnd);
+    if (vid_drawSpanCommon(&myCachedPalettes[pal][0], vramAddr, x, y, vramBank, xFlip, &lineStart, &spanStart, &spanEnd))
+      return;
 
     // Draw the span from left to right.
     unsigned didx = lineStart + x + spanStart;
@@ -151,21 +155,11 @@ static void vid_drawOpaqueSpan( uint8_t pal, uint16_t vramAddr, int x, int y, in
     __builtin_mips_cache(0x11, pixelscolors[1]);
 }
 
+__attribute__((hot))
 static void vid_drawTransparentSpan( uint8_t pal, uint16_t vramAddr, int x, int y, int vramBank, int xFlip, int priority ) {
-
-    // Is this span off the left of the screen?
-    if(x<-7)
-        return;
-
-    // Is this span off the top of the screen?
-    if(y<0)
-        return;
-
-    if((x-8)>160)
-        return;
-
     int lineStart, spanStart, spanEnd;
-    vid_drawSpanCommon(&myCachedPalettes[pal][4], vramAddr, x, y, vramBank, xFlip, &lineStart, &spanStart, &spanEnd);
+    if (vid_drawSpanCommon(&myCachedPalettes[pal][4], vramAddr, x, y, vramBank, xFlip, &lineStart, &spanStart, &spanEnd))
+      return;
 
     // Draw the span from left to right.
     int p;
@@ -193,6 +187,7 @@ static void vid_drawTransparentSpan( uint8_t pal, uint16_t vramAddr, int x, int 
     __builtin_mips_cache(0x11, pixelscolors[1]);
 }
 
+__attribute__((hot))
 void vid_render_line()
 {
     // If the LCD is off, then return.

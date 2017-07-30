@@ -20,16 +20,28 @@
 #define _MBC_HUC1_H_
 __attribute__((cold))
 extern void mbc_huc1_install( void );
+__attribute__((cold))
 uint8_t mbc_huc1_read_ff( uint16_t address );
+__attribute__((cold))
 uint8_t mbc_huc1_read_bank_0( uint16_t address );
+__attribute__((cold))
 uint8_t mbc_huc1_read_bank_n( uint16_t address );
+__attribute__((cold))
 uint8_t mbc_huc1_read_extram( uint16_t address );
+__attribute__((cold))
 uint8_t mbc_huc1_read_extram_disabled( uint16_t address );
+__attribute__((cold))
 void mbc_huc1_write_dummy( uint16_t address, uint8_t data );
+__attribute__((cold))
 void mbc_huc1_write_ram_enable( uint16_t address, uint8_t data );
+__attribute__((cold))
 void mbc_huc1_write_rom_bank_select( uint16_t address, uint8_t data );
+__attribute__((cold))
 void mbc_huc1_write_ram_bank_select( uint16_t address, uint8_t data );
+__attribute__((cold))
 void mbc_huc1_write_mode_select( uint16_t address, uint8_t data );
+__attribute__((cold))
 void mbc_huc1_write_extram( uint16_t address, uint8_t data );
+__attribute__((cold))
 void mbc_huc1_write_extram_disabled( uint16_t address, uint8_t data );
 #endif // _MBC_HUC1_H_

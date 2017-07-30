@@ -113,6 +113,7 @@ static void trash_OAM( void )
         oam[i] = rand()%0xFF;
 }
 
+__attribute__((cold))
 static void LOCKUP( void )
 {
   exit(1);
@@ -2766,6 +2767,7 @@ void cpu_set_flags_register( uint8_t flags )
     
 }
 
+__attribute__((hot))
 void cpu_do_one_frame()
 {
   while( state.frame_done != 1 )
@@ -2778,6 +2780,7 @@ void cpu_do_one_frame()
 }
 
 // Run.
+__attribute__((hot))
 void cpu_do_one_instruction()
 {
   

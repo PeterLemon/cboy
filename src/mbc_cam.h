@@ -18,17 +18,28 @@
 
 #ifndef _MBC_CAM_H_
 #define _MBC_CAM_H_
+__attribute__((cold))
 extern void mbc_cam_install( void );
+__attribute__((cold))
 void mbc_cam_write_dummy( uint16_t address, uint8_t data );
+__attribute__((cold))
 uint8_t mbc_cam_read_bank_0( uint16_t address );
+__attribute__((cold))
 uint8_t mbc_cam_read_bank_n( uint16_t address );
+__attribute__((cold))
 void mbc_cam_write_ram_enable( uint16_t address, uint8_t data );
+__attribute__((cold))
 void mbc_cam_write_rom_bank_select( uint16_t address, uint8_t data );
+__attribute__((cold))
 void mbc_cam_write_extram_bank_select( uint16_t address, uint8_t data );
+__attribute__((cold))
 void mbc_cam_write_mode_select( uint16_t address, uint8_t data );
+__attribute__((cold))
 uint8_t mbc_cam_read_extram( uint16_t address );
+__attribute__((cold))
 void mbc_cam_write_extram( uint16_t address, uint8_t data );
 #ifdef __ANDROID__
+__attribute__((cold))
 void mbc_cam_getCameraImage();
 #endif // __ANDROID__
 #endif // _MBC_CAM_H_
