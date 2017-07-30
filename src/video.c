@@ -22,6 +22,10 @@
 #include "cpu.h"
 #include <SDL.h>
 
+#ifdef __SSE2__
+#include <emmintrin.h>
+#endif
+
 static pixel_t pixmem[160*144];
 static pixel_t colormem[160*144];
 
@@ -93,6 +97,20 @@ static int vid_drawSpanCommon(pixel_t *palette, int vramAddr, int x, int y, int 
     // xFlip?
     if( xFlip )
     {
+#ifdef __SSE2__
+        __m128i temp_pixels = _mm_loadu_si128((__m128i *) pixels);
+        __m128i temp_colors = _mm_loadu_si128((__m128i *) colors);
+
+        temp_pixels = _mm_shufflelo_epi16(temp_pixels, _MM_SHUFFLE(0, 1, 2, 3));
+        temp_colors = _mm_shufflelo_epi16(temp_colors, _MM_SHUFFLE(0, 1, 2, 3));
+        temp_pixels = _mm_shufflehi_epi16(temp_pixels, _MM_SHUFFLE(0, 1, 2, 3));
+        temp_colors = _mm_shufflehi_epi16(temp_colors, _MM_SHUFFLE(0, 1, 2, 3));
+        temp_pixels = _mm_shuffle_epi32(temp_pixels, _MM_SHUFFLE(1, 0, 3, 2));
+        temp_colors = _mm_shuffle_epi32(temp_colors, _MM_SHUFFLE(1, 0, 3, 2));
+
+        _mm_storeu_si128((__m128i *) pixels, temp_pixels);
+        _mm_storeu_si128((__m128i *) colors, temp_colors);
+#else
         // Flip the span.
         pixel_t temp_pixels[8];
         pixel_t temp_colors[8];
@@ -109,6 +127,7 @@ static int vid_drawSpanCommon(pixel_t *palette, int vramAddr, int x, int y, int 
             pixels[i] = temp_pixels[i];
             colors[i] = temp_colors[i];
         }
+#endif
     }
 
     return 0;
@@ -177,20 +196,34 @@ void vid_render_line()
           // DMG mode
           // colors need to be translated through BOTH the DMG and CGB palettes
           for (int i = 0; i < 8; i++) {
+#if __SSE2__
+            memcpy(tempPalette+0, state.bgpd+(i*8), sizeof(pixel_t));
+            memcpy(tempPalette+1, state.bgpd+(i*8)+2, sizeof(pixel_t));
+            memcpy(tempPalette+2, state.bgpd+(i*8)+4, sizeof(pixel_t));
+            memcpy(tempPalette+3, state.bgpd+(i*8)+6, sizeof(pixel_t));
+#else
             tempPalette[0] = state.bgpd[(i*8)+0] + (state.bgpd[(i*8)+1]<<8);
             tempPalette[1] = state.bgpd[(i*8)+2] + (state.bgpd[(i*8)+3]<<8);
             tempPalette[2] = state.bgpd[(i*8)+4] + (state.bgpd[(i*8)+5]<<8);
             tempPalette[3] = state.bgpd[(i*8)+6] + (state.bgpd[(i*8)+7]<<8);
+#endif
 
             myCachedPalettes[i][0] = tempPalette[((state.bgp)      & 0x3) ];
             myCachedPalettes[i][1] = tempPalette[((state.bgp >> 2) & 0x3) ];
             myCachedPalettes[i][2] = tempPalette[((state.bgp >> 4) & 0x3) ];
             myCachedPalettes[i][3] = tempPalette[((state.bgp >> 6) & 0x3) ];
 
+#if __SSE2__
+            memcpy(tempPalette+0, state.obpd+(i*8), sizeof(pixel_t));
+            memcpy(tempPalette+1, state.obpd+(i*8)+2, sizeof(pixel_t));
+            memcpy(tempPalette+2, state.obpd+(i*8)+4, sizeof(pixel_t));
+            memcpy(tempPalette+3, state.obpd+(i*8)+6, sizeof(pixel_t));
+#else
             tempPalette[0] = state.obpd[(i*8)+0] + (state.obpd[(i*8)+1]<<8);
             tempPalette[1] = state.obpd[(i*8)+2] + (state.obpd[(i*8)+3]<<8);
             tempPalette[2] = state.obpd[(i*8)+4] + (state.obpd[(i*8)+5]<<8);
             tempPalette[3] = state.obpd[(i*8)+6] + (state.obpd[(i*8)+7]<<8);
+#endif
 
             int dmgPalette = (i==0) ? state.obp0 : state.obp1;
 
@@ -202,6 +235,11 @@ void vid_render_line()
       } else {
           // CGB mode
           for (int i = 0; i < 8; i++) {
+#ifdef __SSE2__
+            __m128i state_bgpd = _mm_loadu_si128((__m128i *) (state.bgpd+i*8));
+            __m128i state_obpd = _mm_loadu_si128((__m128i *) (state.obpd+i*8));
+            _mm_storeu_si128((__m128i *) myCachedPalettes[i], _mm_unpacklo_epi64(state_bgpd, state_obpd));
+#else
             myCachedPalettes[i][0] = state.bgpd[(i*8)+0] + (state.bgpd[(i*8)+1]<<8);
             myCachedPalettes[i][1] = state.bgpd[(i*8)+2] + (state.bgpd[(i*8)+3]<<8);
             myCachedPalettes[i][2] = state.bgpd[(i*8)+4] + (state.bgpd[(i*8)+5]<<8);
@@ -210,6 +248,7 @@ void vid_render_line()
             myCachedPalettes[i][5] = state.obpd[(i*8)+2] + (state.obpd[(i*8)+3]<<8);
             myCachedPalettes[i][6] = state.obpd[(i*8)+4] + (state.obpd[(i*8)+5]<<8);
             myCachedPalettes[i][7] = state.obpd[(i*8)+6] + (state.obpd[(i*8)+7]<<8);
+#endif
           }
       }
 
