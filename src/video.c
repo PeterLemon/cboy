@@ -195,7 +195,7 @@ void vid_render_line()
           pixel_t tempPalette[4];
           // DMG mode
           // colors need to be translated through BOTH the DMG and CGB palettes
-          for (int i = 0; i < 8; i++) {
+          for (int i = 0; i < 2; i++) {
 #if __SSE2__
             memcpy(tempPalette+0, state.bgpd+(i*8), sizeof(pixel_t));
             memcpy(tempPalette+1, state.bgpd+(i*8)+2, sizeof(pixel_t));
