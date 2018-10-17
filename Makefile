@@ -29,11 +29,9 @@ RSPASM = $(call FIXPATH,$(CURDIR)/../tools/bin/rspasm)
 
 CFLAGS = -Wall -std=c99 -Wno-main -fno-strict-aliasing \
 	-I../libn64/include -I../libn64 -I.
-
-OPTFLAGS = -O3 -march=vr4300 -mabi=eabi -mgp32 -mlong32 \
+OPTFLAGS = -Os -march=vr4300 -mabi=eabi -mgp32 -mlong32 \
 	-flto -ffat-lto-objects -ffunction-sections -fdata-sections \
-	-G4 -mno-extern-sdata -mgpopt -fselective-scheduling \
-  -fsel-sched-pipelining -fsel-sched-pipelining-outer-loops
+	-G4 -mno-extern-sdata -mgpopt
 
 ASMFILES = $(call FIXPATH,\
 )
@@ -44,7 +42,9 @@ CFILES = $(call FIXPATH,\
 	src/cart.c \
 	src/cartdesc.c \
 	src/cartrom.c \
+	src/controller.c \
 	src/cpu.c \
+	src/gbinfo.c \
 	src/input.c \
 	src/main.c \
 	src/mbc_boot.c \
@@ -86,7 +86,7 @@ $(ROM_NAME).z64: $(ROM_NAME).elf
 $(ROM_NAME).elf: libn64 $(OBJFILES)
 	@echo $(call FIXPATH,"Building: $(ROM_NAME)/$@")
 	@$(CC) $(CFLAGS) $(OPTFLAGS) -Wl,-Map=$(ROM_NAME).map -nostdlib \
-		-T$(call FIXPATH,../libn64/rom.ld) -o $@ $(OBJFILES) \
+		-T$(call FIXPATH,../libn64/rom.ld) -o $@ $(OBJFILES) src/si.ld \
 		-L$(call FIXPATH,../libn64) -ln64
 
 #
