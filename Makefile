@@ -44,7 +44,6 @@ CFILES = $(call FIXPATH,\
 	src/cartrom.c \
 	src/controller.c \
 	src/cpu.c \
-	src/gbinfo.c \
 	src/input.c \
 	src/main.c \
 	src/mbc_boot.c \
