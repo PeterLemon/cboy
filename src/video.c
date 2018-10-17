@@ -20,7 +20,7 @@
 #include "video.h"
 #include "memory.h"
 #include "cpu.h"
-#include <fbtext.h>
+#include <priv_include/os/fbtext.h>
 #include <rcp/vi.h>
 
 static pixel_t pixmem[160*144] __attribute__((aligned(16)));
