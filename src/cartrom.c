@@ -1,6 +1,6 @@
 #include "cartrom.h"
 
-const unsigned char __cartrom[1] = { // Place "rom.gb" Into This Array
+const unsigned char __cartrom[] = { // Place "rom.gb" Into This Array
   0
 };
 const unsigned __cartrom_size = sizeof(__cartrom); // Set "rom.gb" Array Size
