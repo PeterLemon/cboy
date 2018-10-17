@@ -469,8 +469,8 @@ void vid_init()
 
   fbtext.x = 13; fbtext.y = 1;
   libn64_fbtext_puts(&fbtext, "cboy by jrra\n");
-  fbtext.x = 6; fbtext.y = 13;
-  libn64_fbtext_puts(&fbtext, "n64chain port by marathonm\n");
+  fbtext.x = 3; fbtext.y = 13;
+  libn64_fbtext_puts(&fbtext, "n64chain port by marathonm & krom\n");
 }
 
 void vid_waitForNextFrame()
