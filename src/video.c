@@ -94,39 +94,20 @@ static int vid_drawSpanCommon(pixel_t *palette, int vramAddr, int x, int y, int 
     // xFlip?
     if( xFlip )
     {
-        uint32_t scratch1, scratch2;
+        // Flip the span.
+        pixel_t temp_pixelscolors[2][8];
 
-        __asm__ __volatile__(
-          ".set noat\n\t"
-          ".set noreorder\n\t"
-          "1:\n\t"
-          "lw %0, 0x0(%2)\n\t"
-          "lw %1, 0xC(%2)\n\t"
-          "sh %0, 0xC(%2)\n\t"
-          "srl %0, %0, 0x8\n\t"
-          "sh %0, 0xE(%2)\n\t"
-          "sh %1, 0x0(%2)\n\t"
-          "srl %1, %1, 0x8\n\t"
-          "sh %1, 0x2(%2)\n\t"
-          "addiu %2, %2, 0x10\n\t"
-
-          "lw %0, (0x4-0x10)(%2)\n\t"
-          "lw %1, (0x8-0x10)(%2)\n\t"
-          "sh %0, (0x8-0x10)(%2)\n\t"
-          "srl %0, %0, 0x8\n\t"
-          "sh %0, (0xA-0x10)(%2)\n\t"
-          "andi %0, %2, 0x20\n\t"
-          "sh %1, (0x4-0x10)(%2)\n\t"
-          "srl %1, %1, 0x8\n\t"
-          "sh %1, (0x6-0x10)(%2)\n\t"
-          "beq %0, $0, 1b\n\t"
-          "nop\n\t"
-          "addiu %2, %2, -0x20\n\t"
-
-          : "=&r"(scratch1), "=&r"(scratch2) //, "=&r"(pixelscolors[0])
-          : "r"(pixelscolors[0])
-          : "memory"
-        );
+        for(p=0; p<8; ++p)
+        {
+            // Copy pixels to a temporary place, in reverse order.
+            temp_pixelscolors[0][p] = pixelscolors[0][7-p];
+            temp_pixelscolors[1][p] = pixelscolors[1][7-p];
+        }
+        for(p=0; p<8; ++p)
+        {
+            pixelscolors[0][p] = temp_pixelscolors[0][p];
+            pixelscolors[1][p] = temp_pixelscolors[1][p];
+        }
     }
 
     return 0;
