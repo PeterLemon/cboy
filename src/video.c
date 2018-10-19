@@ -209,6 +209,15 @@ void vid_render_line()
           myCachedPalettes[i][5] = myPalette[4 + ((dmgPalette >> 2) & 0x3) ];
           myCachedPalettes[i][6] = myPalette[4 + ((dmgPalette >> 4) & 0x3) ];
           myCachedPalettes[i][7] = myPalette[4 + ((dmgPalette >> 6) & 0x3) ];
+
+          myCachedPalettes[i][0] = ((myCachedPalettes[i][0] & 0x001F) << 11) + ((myCachedPalettes[i][0] & 0x03E0) << 1) + ((myCachedPalettes[i][0] & 0x7C00) >> 9);
+          myCachedPalettes[i][1] = ((myCachedPalettes[i][1] & 0x001F) << 11) + ((myCachedPalettes[i][1] & 0x03E0) << 1) + ((myCachedPalettes[i][1] & 0x7C00) >> 9);
+          myCachedPalettes[i][2] = ((myCachedPalettes[i][2] & 0x001F) << 11) + ((myCachedPalettes[i][2] & 0x03E0) << 1) + ((myCachedPalettes[i][2] & 0x7C00) >> 9);
+          myCachedPalettes[i][3] = ((myCachedPalettes[i][3] & 0x001F) << 11) + ((myCachedPalettes[i][3] & 0x03E0) << 1) + ((myCachedPalettes[i][3] & 0x7C00) >> 9);
+          myCachedPalettes[i][4] = ((myCachedPalettes[i][4] & 0x001F) << 11) + ((myCachedPalettes[i][4] & 0x03E0) << 1) + ((myCachedPalettes[i][4] & 0x7C00) >> 9);
+          myCachedPalettes[i][5] = ((myCachedPalettes[i][5] & 0x001F) << 11) + ((myCachedPalettes[i][5] & 0x03E0) << 1) + ((myCachedPalettes[i][5] & 0x7C00) >> 9);
+          myCachedPalettes[i][6] = ((myCachedPalettes[i][6] & 0x001F) << 11) + ((myCachedPalettes[i][6] & 0x03E0) << 1) + ((myCachedPalettes[i][6] & 0x7C00) >> 9);
+          myCachedPalettes[i][7] = ((myCachedPalettes[i][7] & 0x001F) << 11) + ((myCachedPalettes[i][7] & 0x03E0) << 1) + ((myCachedPalettes[i][7] & 0x7C00) >> 9);
         }
     } else {
         // CGB mode
@@ -223,6 +232,15 @@ void vid_render_line()
           myCachedPalettes[i][5] = state.obpd[(i*8)+2] + (state.obpd[(i*8)+3]<<8);
           myCachedPalettes[i][6] = state.obpd[(i*8)+4] + (state.obpd[(i*8)+5]<<8);
           myCachedPalettes[i][7] = state.obpd[(i*8)+6] + (state.obpd[(i*8)+7]<<8);
+
+          myCachedPalettes[i][0] = ((myCachedPalettes[i][0] & 0x001F) << 11) + ((myCachedPalettes[i][0] & 0x03E0) << 1) + ((myCachedPalettes[i][0] & 0x7C00) >> 9);
+          myCachedPalettes[i][1] = ((myCachedPalettes[i][1] & 0x001F) << 11) + ((myCachedPalettes[i][1] & 0x03E0) << 1) + ((myCachedPalettes[i][1] & 0x7C00) >> 9);
+          myCachedPalettes[i][2] = ((myCachedPalettes[i][2] & 0x001F) << 11) + ((myCachedPalettes[i][2] & 0x03E0) << 1) + ((myCachedPalettes[i][2] & 0x7C00) >> 9);
+          myCachedPalettes[i][3] = ((myCachedPalettes[i][3] & 0x001F) << 11) + ((myCachedPalettes[i][3] & 0x03E0) << 1) + ((myCachedPalettes[i][3] & 0x7C00) >> 9);
+          myCachedPalettes[i][4] = ((myCachedPalettes[i][4] & 0x001F) << 11) + ((myCachedPalettes[i][4] & 0x03E0) << 1) + ((myCachedPalettes[i][4] & 0x7C00) >> 9);
+          myCachedPalettes[i][5] = ((myCachedPalettes[i][5] & 0x001F) << 11) + ((myCachedPalettes[i][5] & 0x03E0) << 1) + ((myCachedPalettes[i][5] & 0x7C00) >> 9);
+          myCachedPalettes[i][6] = ((myCachedPalettes[i][6] & 0x001F) << 11) + ((myCachedPalettes[i][6] & 0x03E0) << 1) + ((myCachedPalettes[i][6] & 0x7C00) >> 9);
+          myCachedPalettes[i][7] = ((myCachedPalettes[i][7] & 0x001F) << 11) + ((myCachedPalettes[i][7] & 0x03E0) << 1) + ((myCachedPalettes[i][7] & 0x7C00) >> 9);
         }
     }
     inval_palette = 0;
@@ -472,74 +490,24 @@ void vid_frame()
       __asm__ __volatile__(
         ".set noat\n\t"
         ".set gp=64\n\t"
-
-        // Color Bits Are In ABBBBBGGGGGRRRRR Order, N64 Needs RRRRRGGGGGBBBBBA Order
-        "li %5, 0x001F001F\n\t" // R Bits: 0x001F001F001F001F
-        "dsll32 %5, %5, 0\n\t"
-        "li %0, 0x001F001F\n\t"
-        "or %5, %5, %0\n\t"
-        "li %6, 0x03E003E0\n\t" // G Bits: 0x03E003E003E003E0
-        "dsll32 %6, %6, 0\n\t"
-        "li %0, 0x03E003E0\n\t"
-        "or %6, %6, %0\n\t"
-        "li %7, 0x7C007C00\n\t" // B Bits: 0x7C007C007C007C00
-        "dsll32 %7, %7, 0\n\t"
-        "li %0, 0x7C007C00\n\t"
-        "or %7, %7, %0\n\t"
-
         "ld %0, 0x0(%4)\n\t"
-        "and %1, %0, %5\n\t"
-        "dsll %1, %1, 11\n\t"
-        "and %8, %0, %6\n\t"
-        "dsll %8, %8, 1\n\t"
-        "or %1, %1, %8\n\t"
-        "and %8, %0, %7\n\t"
-        "dsrl %8, %8, 9\n\t"
-        "or %1, %1, %8\n\t"
-        "sd %1, 0x0(%3)\n\t"
-
+        "ld %1, 0x8(%4)\n\t"
+        "cache 0xD, 0x0(%3)\n\t"
+        "sd %0, 0x0(%3)\n\t"
         "addiu %2, %3, 0x10\n\t"
-
-        "ld %0, 0x8(%4)\n\t"
-        "and %1, %0, %5\n\t"
-        "dsll %1, %1, 11\n\t"
-        "and %8, %0, %6\n\t"
-        "dsll %8, %8, 1\n\t"
-        "or %1, %1, %8\n\t"
-        "and %8, %0, %7\n\t"
-        "dsrl %8, %8, 9\n\t"
-        "or %1, %1, %8\n\t"
         "sd %1, -0x8(%2)\n\t"
 
         "ld %0, 0x10(%4)\n\t"
-        "and %1, %0, %5\n\t"
-        "dsll %1, %1, 11\n\t"
-        "and %8, %0, %6\n\t"
-        "dsll %8, %8, 1\n\t"
-        "or %1, %1, %8\n\t"
-        "and %8, %0, %7\n\t"
-        "dsrl %8, %8, 9\n\t"
-        "or %1, %1, %8\n\t"
-        "sd %1, 0x0(%3)\n\t"
-
+        "ld %1, 0x18(%4)\n\t"
+        "cache 0xD, 0x0(%3)\n\t"
+        "sd %0, 0x0(%3)\n\t"
         "addiu %2, %3, 0x10\n\t"
-
-        "ld %0, 0x18(%4)\n\t"
-        "and %1, %0, %5\n\t"
-        "dsll %1, %1, 11\n\t"
-        "and %8, %0, %6\n\t"
-        "dsll %8, %8, 1\n\t"
-        "or %1, %1, %8\n\t"
-        "and %8, %0, %7\n\t"
-        "dsrl %8, %8, 9\n\t"
-        "or %1, %1, %8\n\t"
         "sd %1, -0x8(%2)\n\t"
-
         ".set gp=default\n\t"
         ".set at\n\t"
 
         : "=&r" (clh1), "=&r" (clh2), "=&r" (fbaddr)
-        : "2" (fbaddr), "r" (pixmem + (i * 160) + j), "r" (5), "r" (6), "r" (7), "r" (8)
+        : "2" (fbaddr), "r" (pixmem + (i * 160) + j)
         : "memory"
       );
     }
