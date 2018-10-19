@@ -1244,7 +1244,7 @@ static void SBC_A_HL( void )
   SUB_SBC_COMMON(temp); 
 }
 
-static void AND_OR_XOR_COMMON(void)
+static void AND_COMMON(void)
 {
   // flag Z
   if( state.a == 0 )
@@ -1264,6 +1264,26 @@ static void AND_OR_XOR_COMMON(void)
   state.pc++;
 }
 
+static void OR_XOR_COMMON(void)
+{
+  // flag Z
+  if( state.a == 0 )
+    SET_Z();
+  else
+    RESET_Z();
+  
+  // flag N
+  RESET_N();
+  
+  // flag H
+  RESET_H();
+  
+  // flag C
+  RESET_C();
+  
+  state.pc++;
+}
+
 static void AND_R( void )
 {
   // opcodes A0-A5,A7
@@ -1274,7 +1294,7 @@ static void AND_R( void )
   
   state.a &= (*reg);
 
-  AND_OR_XOR_COMMON();
+  AND_COMMON();
 }
 
 static void AND_HL( void )
@@ -1282,7 +1302,7 @@ static void AND_HL( void )
   // opcode A6
   state.a &= read_byte(state.hl);
   
-  AND_OR_XOR_COMMON();
+  AND_COMMON();
 }
 
 static void XOR_R( void )
@@ -1295,7 +1315,7 @@ static void XOR_R( void )
   
   state.a = state.a ^ (*reg);
   
-  AND_OR_XOR_COMMON();
+  OR_XOR_COMMON();
 }
 
 static void XOR_HL( void )
@@ -1303,7 +1323,7 @@ static void XOR_HL( void )
   // opcode AE
   state.a ^= read_byte(state.hl);
   
-  AND_OR_XOR_COMMON();
+  OR_XOR_COMMON();
 }
 
 static void OR_R( void )
@@ -1317,7 +1337,7 @@ static void OR_R( void )
   
   state.a |= (*reg);
   
-  AND_OR_XOR_COMMON();
+  OR_XOR_COMMON();
 }
 
 static void OR_HL( void )
@@ -1327,7 +1347,7 @@ static void OR_HL( void )
   
   state.a |= read_byte(state.hl);
   
-  AND_OR_XOR_COMMON();
+  OR_XOR_COMMON();
 }
 
 static void CP_R( void )
@@ -2292,7 +2312,7 @@ static void AND_BYTE( void )
   state.a &= arg;
   state.pc ++;
 
-  AND_OR_XOR_COMMON();
+  AND_COMMON();
 }
 
 static void RST_20( void )
@@ -2368,7 +2388,7 @@ static void XOR_BYTE( void )
   state.a ^= read_byte(state.pc+1);
   state.pc ++;
 
-  AND_OR_XOR_COMMON();
+  OR_XOR_COMMON();
 }
 
 static void RST_28( void )
@@ -2431,7 +2451,7 @@ static void OR_BYTE( void )
   state.a |= read_byte(state.pc+1);
   state.pc ++;
 
-  AND_OR_XOR_COMMON();  
+  OR_XOR_COMMON();  
 }
 
 static void RST_30( void )
