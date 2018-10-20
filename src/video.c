@@ -456,9 +456,9 @@ void vid_init()
 
   // Setup RDP buffer
   rdp_start = memory_pos;
-  rdp_set_scissor(0.0,0.0, 320.0,240.0, SCISSOR_FIELD_DISABLE,SCISSOR_EVEN); // Set Scissor: XH,YH, XL,YL, Scissor Field Enable,Field
+  rdp_set_scissor(80.0,48.0, 240.0,196.0, SCISSOR_FIELD_DISABLE,SCISSOR_EVEN); // Set Scissor: XH,YH, XL,YL, Scissor Field Enable,Field
   rdp_set_color_image(IMAGE_DATA_FORMAT_RGBA,SIZE_OF_PIXEL_16B, 320, vi_state.origin); // Set Color Image: Format,Size, Width, DRAM Address
-  rdp_set_other_modes(CYCLE_TYPE_COPY); // Set Other Modes
+  rdp_set_other_modes(CYCLE_TYPE_COPY|ALPHA_DITHER_SEL_NO_DITHER|RGB_DITHER_SEL_NO_DITHER); // Set Other Modes
   for( int i=0; i<12; ++i ) {
     rdp_set_texture_image(IMAGE_DATA_FORMAT_RGBA, SIZE_OF_PIXEL_16B, 160, pixmemptr+(3840*i)); // Set Texture Image: Format,Size, Width, DRAM Address
     rdp_set_tile(IMAGE_DATA_FORMAT_RGBA, SIZE_OF_PIXEL_16B, 40, 0x000, 0,0, 0,0,0,0, 0,0,0,0); // Set Tile: Format,Size, Tile Line Size, TMEM Address, Tile,Palette, CT,MT,MaskT,ShiftT, CS,MS,MaskS,ShiftS
