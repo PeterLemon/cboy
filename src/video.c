@@ -500,6 +500,5 @@ void vid_waitForNextFrame()
 
 void vid_frame()
 {
-  // Run RDP List
   rdp_run(rdp_start, rdp_end); // Run RDP buffer: Start, End
 }
