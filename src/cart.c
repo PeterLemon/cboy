@@ -22,6 +22,7 @@
 #include "cartdesc.h"
 #include "cpu.h"
 #include "bootrom.h"
+#include "cartrom.h"
 
 struct cart_s cart;
 
@@ -71,7 +72,7 @@ void cart_init( void ) {
 
   // cart_init_cartrom also sets cart.savename
   cart_init_cartrom( cartromName );
-  cart_init_bootrom( bootromName );
+  cart_init_bootrom();
   
   // set the MBC type for later use
   cart.mbc_type = cart.cartrom[0x147];
@@ -147,16 +148,13 @@ void cart_init( void ) {
 __attribute__((cold))
 void cart_init_cartrom( char* cartromName )
 {
-  extern uint8_t __cartrom[];
-  extern const unsigned __cartrom_size;
-
-  if( __cartrom_size > MAX_CARTROM_SIZE )
+  if( cartrom_bin_len > MAX_CARTROM_SIZE )
     cart.cartromsize = MAX_CARTROM_SIZE;
   else
-    cart.cartromsize = __cartrom_size;
+    cart.cartromsize = cartrom_bin_len;
  
   // Read the cartrom.
-  cart.cartrom = __cartrom;
+  cart.cartrom = (uint8_t *)cartrom_bin;
   //printf( "Cart rom: %d bytes read.\n", cart.cartromsize );
   
   cart.cartrom_num_banks = cart.cartromsize / 16384;
@@ -170,9 +168,13 @@ void cart_init_cartrom( char* cartromName )
 }
 
 __attribute__((cold))
-void cart_init_bootrom( char* bootromName )
+void cart_init_bootrom( void )
 {
-  cart.bootromsize = bootrom_bin_len;
+  if( bootrom_bin_len > MAX_BOOTROM_SIZE )
+    cart.bootromsize = MAX_BOOTROM_SIZE;
+  else
+    cart.bootromsize = bootrom_bin_len;
+
   cart.bootrom = (uint8_t *)bootrom_bin;
 }
 

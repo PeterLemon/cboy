@@ -20,7 +20,7 @@
 #include "video.h"
 #include "memory.h"
 #include "cpu.h"
-#include <priv_include/os/fbtext.h>
+#include <os/fbtext.h>
 #include <rcp/vi.h>
 
 #include "rdp.c"

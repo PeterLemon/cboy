@@ -1,3 +1,2 @@
-extern const unsigned char __cartrom[];
-extern const unsigned __cartrom_size;
-extern const unsigned char _binary_filesystem_bin_start;
+extern uint8_t cartrom_bin[];
+extern const unsigned cartrom_bin_len;

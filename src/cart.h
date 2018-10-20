@@ -62,7 +62,7 @@ extern void cart_disable_bootrom( void );
 __attribute__((cold))
 void cart_init_cartrom( char* cartromName );
 __attribute__((cold))
-void cart_init_bootrom( char* bootromName );
+extern void cart_init_bootrom( void );
 __attribute__((cold))
 extern void cart_reset_mbc( void );
 extern struct cart_s cart;
