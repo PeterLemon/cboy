@@ -23,6 +23,8 @@
 #include <priv_include/os/fbtext.h>
 #include <rcp/vi.h>
 
+#include "rdp.c"
+
 static pixel_t pixmem[160*144] __attribute__((aligned(16)));
 static pixel_t colormem[160*144] __attribute__((aligned(16)));
 
@@ -30,6 +32,9 @@ static pixel_t myCachedPalettes[8][8] __attribute__((aligned(16)));
 static pixel_t pixelscolors[2][8] __attribute__((aligned(32)));
 static pixel_t myPalette[8] __attribute__((aligned(16)));
 char inval_palette = 1;
+
+static uint32_t pixmemptr = (pixel_t*)pixmem;
+static uint32_t rdp_start, rdp_end;
 
 __attribute__((hot))
 static int vid_drawSpanCommon(pixel_t *palette, int vramAddr, int x, int y, int vramBank,
@@ -447,6 +452,23 @@ struct libn64_fbtext_context fbtext;
 
 void vid_init()
 {
+  *(uintptr_t *)0xA410000C = 1; // Clear XBUS Bit To Enable RDP On CPU
+
+  // Setup RDP buffer
+  rdp_start = memory_pos;
+  rdp_set_scissor(0.0,0.0, 320.0,240.0, SCISSOR_FIELD_DISABLE,SCISSOR_EVEN); // Set Scissor: XH,YH, XL,YL, Scissor Field Enable,Field
+  rdp_set_color_image(IMAGE_DATA_FORMAT_RGBA,SIZE_OF_PIXEL_16B, 320, vi_state.origin); // Set Color Image: Format,Size, Width, DRAM Address
+  rdp_set_other_modes(CYCLE_TYPE_COPY); // Set Other Modes
+  for( int i=0; i<12; ++i ) {
+    rdp_set_texture_image(IMAGE_DATA_FORMAT_RGBA, SIZE_OF_PIXEL_16B, 160, pixmemptr+(3840*i)); // Set Texture Image: Format,Size, Width, DRAM Address
+    rdp_set_tile(IMAGE_DATA_FORMAT_RGBA, SIZE_OF_PIXEL_16B, 40, 0x000, 0,0, 0,0,0,0, 0,0,0,0); // Set Tile: Format,Size, Tile Line Size, TMEM Address, Tile,Palette, CT,MT,MaskT,ShiftT, CS,MS,MaskS,ShiftS
+    rdp_load_tile(0.0,0.0, 159.0,11.0, 0); // Load Tile: SL,TL, SH,TH, Tile
+    rdp_texture_rectangle(80.0,48.0+(i*12), 239.0,59.0+(i*12), 0.0,0.0, 4.0,1.0, 0); // Texture Rectangle: XH,YH, XL,YL, S,T, DSDX,DTDY, Tile
+    rdp_sync_tile(); // Sync Tile
+  }
+  rdp_sync_full(); // Ensure Entire Scene Is Fully Drawn
+  rdp_end = memory_pos;
+
   vi_flush_state(&vi_state);
 
   for (unsigned i = 0; i < 320 * 240 * 2; i += 16) {
@@ -466,7 +488,7 @@ void vid_init()
   libn64_fbtext_init(&fbtext, vi_state.origin, LIBN64_FBTEXT_COLOR_WHITE,
       LIBN64_FBTEXT_COLOR_BLACK, 0x140, LIBN64_FBTEXT_16BPP);
 
-  fbtext.x = 13; fbtext.y = 1;
+  fbtext.x = 14; fbtext.y = 1;
   libn64_fbtext_puts(&fbtext, "cboy by jrra\n");
   fbtext.x = 3; fbtext.y = 13;
   libn64_fbtext_puts(&fbtext, "n64chain port by marathonm & krom\n");
@@ -478,40 +500,6 @@ void vid_waitForNextFrame()
 
 void vid_frame()
 {
-  uint32_t fbaddr;
-  unsigned i, j;
-
-  fbaddr = 0x80000000 | (vi_state.origin + 48 * 320 *2 + 80 * 2);
-
-  for (i = 0; i < 144; i++) {
-    for (j = 0; j < 160; j += 16) {
-      uint32_t clh1, clh2;
-
-      __asm__ __volatile__(
-        ".set noat\n\t"
-        ".set gp=64\n\t"
-        "ld %0, 0x0(%4)\n\t"
-        "ld %1, 0x8(%4)\n\t"
-        "cache 0xD, 0x0(%3)\n\t"
-        "sd %0, 0x0(%3)\n\t"
-        "addiu %2, %3, 0x10\n\t"
-        "sd %1, -0x8(%2)\n\t"
-
-        "ld %0, 0x10(%4)\n\t"
-        "ld %1, 0x18(%4)\n\t"
-        "cache 0xD, 0x0(%3)\n\t"
-        "sd %0, 0x0(%3)\n\t"
-        "addiu %2, %3, 0x10\n\t"
-        "sd %1, -0x8(%2)\n\t"
-        ".set gp=default\n\t"
-        ".set at\n\t"
-
-        : "=&r" (clh1), "=&r" (clh2), "=&r" (fbaddr)
-        : "2" (fbaddr), "r" (pixmem + (i * 160) + j)
-        : "memory"
-      );
-    }
-
-    fbaddr += (320 - 160) * 2;
-  }
+  // Run RDP List
+  rdp_run(rdp_start, rdp_end); // Run RDP buffer: Start, End
 }
