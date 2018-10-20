@@ -33,7 +33,7 @@ static pixel_t pixelscolors[2][8] __attribute__((aligned(32)));
 static pixel_t myPalette[8] __attribute__((aligned(16)));
 char inval_palette = 1;
 
-static uint32_t pixmemptr = (pixel_t*)pixmem;
+static uint32_t pixmemptr = (uint32_t)pixmem;
 static uint32_t rdp_start, rdp_end;
 
 __attribute__((hot))
