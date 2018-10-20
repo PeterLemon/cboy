@@ -452,7 +452,7 @@ struct libn64_fbtext_context fbtext;
 
 void vid_init()
 {
-  *(uintptr_t *)0xA410000C = 1; // Clear XBUS Bit To Enable RDP On CPU
+  DPC.STATUS = 1; // Clear XBUS Bit To Enable RDP On CPU
 
   // Setup RDP buffer
   rdp_start = memory_pos;

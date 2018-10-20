@@ -1,0 +1,24 @@
+SECTIONS {
+  RDRAM  = 0xA3F00000; /* 03F00000..03F00027 RDRAM */
+  SP_MEM = 0xA4000000; /* 04000000..04000FFF RSP Memory */
+  SP     = 0xA4040000; /* 04040000..0404001F RSP */
+  SP_PC  = 0xA4080000; /* 04080000..04080007 RSP Program Counter */
+  DPC    = 0xA4100000; /* 04100000..0410001F RDP Command */
+  DPS    = 0xA4200000; /* 04200000..0420000F RDP Span */
+  MI     = 0xA4300000; /* 04300000..0430000F MIPS Interface */
+  VI     = 0xA4400000; /* 04400000..04400037 Video Interface */
+  AI     = 0xA4500000; /* 04500000..04500017 Audio Interface */
+  PI     = 0xA4600000; /* 04600000..04600033 Peripheral Interface */
+  RI     = 0xA4700000; /* 04700000..0470001F RDRAM Interface */
+  SI     = 0xA4800000; /* 04800000..0480001B Serial Interface */
+  
+  CART_DOM2_ADDR1 = 0xA5000000; /* 05000000..0507FFFF Cartridge Domain 2 (Address 1) SRAM */
+  CART_DOM1_ADDR1 = 0xA6000000; /* 06000000..07FFFFFF Cartridge Domain 1 (Address 1) 64DD */
+  CART_DOM2_ADDR2 = 0xA8000000; /* 08000000..0FFFFFFF Cartridge Domain 2 (Address 2) SRAM */
+  CART_DOM1_ADDR2 = 0xB0000000; /* 10000000..18000803 Cartridge Domain 1 (Address 2) ROM */
+  
+  PIF    = 0xBFC00000; /* 1FC00000..1FC007BF PIF */
+  
+  CART_DOM1_ADDR3 = 0xBFD00000; /* 1FD00000..7FFFFFFF Cartridge Domain 1 (Address 3) */
+  EXT_SYS_AD      = 0x80000000; /* 80000000..FFFFFFFF External SysAD Device */
+}

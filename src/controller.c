@@ -1,21 +1,6 @@
 #include <stdint.h>
-
 #include "controller.h"
-
-extern volatile struct {
-  uint32_t DRAM_ADDR;
-  uint32_t PIF_ADDR_RD64B;
-  uint32_t reserved0;
-  uint32_t reserved1;
-  uint32_t PIF_ADDR_WR64B;
-  uint32_t reserved2;
-  uint32_t STATUS;
-} SI;
-
-extern const volatile struct {
-  unsigned char ROM[0x7C0];
-  unsigned char RAM[0x40];
-} PIF;
+#include "n64.h"
 
 static uint32_t pif_cmds[16] __attribute__ ((aligned(8))) = {
   0xFF010401, 0xFFFFFFFF,

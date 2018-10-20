@@ -1,4 +1,0 @@
-SECTIONS {
-	SI  = 0xa4800000;
-	PIF = 0xbfc00000;
-}

@@ -93,7 +93,7 @@ $(ROM_NAME).z64: $(ROM_NAME).elf
 $(ROM_NAME).elf: libn64 libgfx $(OBJFILES) filesystem.obj
 	@echo $(call FIXPATH,"Building: $(ROM_NAME)/$@")
 	@$(CC) $(CFLAGS) $(OPTFLAGS) -Wl,-Map=$(ROM_NAME).map -nostdlib \
-		-T$(call FIXPATH,../libn64/rom.ld) -o $@ $(OBJFILES) filesystem.obj src/si.ld \
+		-T$(call FIXPATH,../libn64/rom.ld) -o $@ $(OBJFILES) filesystem.obj src/n64.ld \
 		-L$(call FIXPATH,../libn64) -ln64 -L$(call FIXPATH,../libgfx) -lgfx
 
 #
