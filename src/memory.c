@@ -119,29 +119,29 @@ void select_vram_bank( uint8_t num ) {
 
 extern int pause;
 uint8_t read_vram_bank_zero( uint16_t address ) {
-//   if( state.vid_mode == 3 )
-//   {
-//     return 0xff;
-//   }
-//   else
-    return vram_bank_zero[address & 0x1FFF];
+// if( state.vid_mode == 3 )
+// {
+//   return 0xff;
+// }
+// else
+  return vram_bank_zero[address & 0x1FFF];
 }
 
 void write_vram_bank_zero( uint16_t address, uint8_t data) {
-//   if( state.vid_mode != 3 )
-    vram_bank_zero[address & 0x1FFF] = data;
+// if( state.vid_mode != 3 )
+  vram_bank_zero[address & 0x1FFF] = data;
 }
 
 uint8_t read_vram_bank_one( uint16_t address ) {
-//   if( state.vid_mode == 3 )
-//     return 0xff;
-//   else
-    return vram_bank_one[address & 0x1FFF];
+// if( state.vid_mode == 3 )
+//   return 0xff;
+// else
+  return vram_bank_one[address & 0x1FFF];
 }
 
 void write_vram_bank_one( uint16_t address, uint8_t data ) {
-//   if( state.vid_mode != 3 )
-    vram_bank_one[address & 0x1FFF] = data;
+// if( state.vid_mode != 3 )
+  vram_bank_one[address & 0x1FFF] = data;
 }
 
 
@@ -207,7 +207,7 @@ uint8_t read_special( uint16_t address ) {
   
   switch(address) {
     case ADDR_JOYP:
-//       printf("OMG JOYP READ\n");
+//      printf("OMG JOYP READ\n");
       switch( state.joyp_select )
       {
 	case INPUT_SELECT_BUTTONS:
@@ -553,6 +553,7 @@ void write_special( uint16_t address, uint8_t data ) {
       }
       break;
     case ADDR_BGP:
+      inval_palette = 1;
       state.bgp = data;
       break;
     case ADDR_OBP0:
@@ -621,8 +622,11 @@ void write_special( uint16_t address, uint8_t data ) {
       else
       {
 	// h-blank DMA
-      // TODO
-// 	state.hdma5 &= 0x7F;
+        // TODO
+//        int source = state.hdma_source.w & 0xFFF0;
+//        int dest = 0x8000 + (state.hdma_destination.w & 0x1FF0);
+//        int length = state.hdma5 & 0x7F;
+//        state.hdma5 &= 0x7F;
       }
       break;
     case ADDR_RP:
