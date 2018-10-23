@@ -33,7 +33,6 @@ static pixel_t pixelscolors[2][8] __attribute__((aligned(32)));
 static pixel_t myPalette[8] __attribute__((aligned(16)));
 char inval_palette = 1;
 
-static uint32_t pixmemptr = (uint32_t)pixmem;
 static uint32_t rdp_start, rdp_end;
 
 __attribute__((hot))
@@ -460,7 +459,7 @@ void vid_init()
   rdp_set_color_image(IMAGE_DATA_FORMAT_RGBA,SIZE_OF_PIXEL_16B, 320, vi_state.origin); // Set Color Image: Format,Size, Width, DRAM Address
   rdp_set_other_modes(CYCLE_TYPE_COPY|ALPHA_DITHER_SEL_NO_DITHER|RGB_DITHER_SEL_NO_DITHER); // Set Other Modes
   for( int i=0; i<12; ++i ) {
-    rdp_set_texture_image(IMAGE_DATA_FORMAT_RGBA, SIZE_OF_PIXEL_16B, 160, pixmemptr+(3840*i)); // Set Texture Image: Format,Size, Width, DRAM Address
+    rdp_set_texture_image(IMAGE_DATA_FORMAT_RGBA, SIZE_OF_PIXEL_16B, 160, (uint32_t)pixmem+(3840*i)); // Set Texture Image: Format,Size, Width, DRAM Address
     rdp_set_tile(IMAGE_DATA_FORMAT_RGBA, SIZE_OF_PIXEL_16B, 40, 0x000, 0,0, 0,0,0,0, 0,0,0,0); // Set Tile: Format,Size, Tile Line Size, TMEM Address, Tile,Palette, CT,MT,MaskT,ShiftT, CS,MS,MaskS,ShiftS
     rdp_load_tile(0.0,0.0, 159.0,11.0, 0); // Load Tile: SL,TL, SH,TH, Tile
     rdp_texture_rectangle(80.0,48.0+(i*12), 239.0,59.0+(i*12), 0.0,0.0, 4.0,1.0, 0); // Texture Rectangle: XH,YH, XL,YL, S,T, DSDX,DTDY, Tile
