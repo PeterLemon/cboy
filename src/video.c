@@ -431,7 +431,7 @@ void vid_render_line()
 // These pre-defined values are suitable for NTSC.
 // TODO: Add support for PAL and PAL-M televisions.
 static const vi_state_t vi_state = {
-  0x0000324E, // status
+  0x00003202, // status
   0x00200000, // origin
   0x00000140, // width
   0x00000002, // intr
