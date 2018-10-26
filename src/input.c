@@ -37,51 +37,11 @@ void input_init()
 
 void input_handle()
 {
-  state.joyp_buttons = 0xFF;
-  state.joyp_directions = 0xFF;
-
-  switch(read_controller()) {
-    case JOY_START:
-      state.joyp_buttons &= ~INPUT_BUTTONS_START;
-      state.iflag |= IMASK_JOYPAD;
-      state.halt = 0;
-      break;
-    case JOY_Z:
-      state.joyp_buttons &= ~INPUT_BUTTONS_SELECT;
-      state.iflag |= IMASK_JOYPAD;
-      state.halt = 0;
-      break;
-    case JOY_A:
-      state.joyp_buttons &= ~INPUT_BUTTONS_A;
-      state.iflag |= IMASK_JOYPAD;
-      state.halt = 0;
-      break;
-    case JOY_B:
-      state.joyp_buttons &= ~INPUT_BUTTONS_B;
-      state.iflag |= IMASK_JOYPAD;
-      state.halt = 0;
-      break;
-    case JOY_UP:
-      state.joyp_directions &= ~INPUT_DIRECTIONS_UP;
-      state.iflag |= IMASK_JOYPAD;
-      state.halt = 0;
-      break;
-    case JOY_DOWN:
-      state.joyp_directions &= ~INPUT_DIRECTIONS_DOWN;
-      state.iflag |= IMASK_JOYPAD;
-      state.halt = 0;
-      break;
-    case JOY_LEFT:
-      state.joyp_directions &= ~INPUT_DIRECTIONS_LEFT;
-      state.iflag |= IMASK_JOYPAD;
-      state.halt = 0;
-      break;
-    case JOY_RIGHT:
-      state.joyp_directions &= ~INPUT_DIRECTIONS_RIGHT;
-      state.iflag |= IMASK_JOYPAD;
-      state.halt = 0;
-      break;
-    default:
-      break;
+  uint32_t n64controller = read_controller() & 0xFF00;
+  state.joyp_buttons = ~( ((n64controller & JOY_A) >> 15) | ((n64controller & JOY_B) >> 13) | ((n64controller & JOY_Z) >> 11) | ((n64controller & JOY_START) >> 9) );
+  state.joyp_directions = ~( ((n64controller & JOY_UP) >> 9) | ((n64controller & JOY_DOWN) >> 7) | ((n64controller & (JOY_RIGHT+JOY_LEFT)) >> 8) );
+  if(n64controller != 0) {
+    state.iflag |= IMASK_JOYPAD;
+    state.halt = 0;
   }
 }

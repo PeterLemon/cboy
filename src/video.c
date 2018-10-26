@@ -495,6 +495,7 @@ void vid_init()
 
 void vid_waitForNextFrame()
 {
+  while(VI.V_CURRENT_LINE != 0x1E0); // Wait For VSync
 }
 
 void vid_frame()
