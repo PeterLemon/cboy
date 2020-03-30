@@ -1,5 +1,8 @@
-// N64 RDP Definitions
+#include "n64.h"
 
+//--------------------
+// N64 VI Definitions
+//--------------------
 #define BPP0  0x0000 // VI Status/Control: Color Depth Blank (No Data Or Sync) (Bit 0..1)
 //*RESERVED*  0x0001 // VI Status/Control: Color Depth Reserved (Bit 0..1)
 #define BPP16 0x0002 // VI Status/Control: Color Depth 16BPP R5/G5/B5/A1 (Bit 0..1)
@@ -34,189 +37,226 @@
 #define PIXEL_ADV_F 0x0F000 // VI Status/Control: Pixel Advance F (Bit 12..15)
 #define DITHER_FILTER_EN 0x10000 // VI Status/Control: Dither Filter Enable (Used With 16BPP Display) (Bit 16)
 
-// No_Op: No Effect On RDP Command Execution, Useful For Padding Command Buffers
+//---------------------
+// N64 RDP Definitions
+//---------------------
+// RDP FUNCTIONS
 
-// Fill_Triangle: lft,level,tile,yl,ym,yh, xl,xlf,dxldy,dxldyf, xh,xhf,dxhdy,dxhdyf, xm,xmf,dxmdy,dxmdyf
-// Word 0: Left Major Flag (0=Left Major, 1=Right Major), Number Of Mip-Maps Minus One, Tile ID, Y Coordinate Of Low, Mid Minor, Major Edge (Fixed Point S.11.2)
-// Word 1: X Coordinate Of Low    Edge Integer, Fraction, DxLDy Inverse Slope Of Low    Edge Integer, Fraction
-// Word 2: X Coordinate Of Major  Edge Integer, Fraction, DxHDy Inverse Slope Of Major  Edge Integer, Fraction
-// Word 3: X Coordinate Of Middle Edge Integer, Fraction, DxMDy Inverse Slope Of Middle Edge Integer, Fraction
+// Run RDP Command List (From Start Address To End Address)
+void rdp_run( uint32_t start, uint32_t end )
+{
+  // Store DPC Command Start Address To DP Start Register (0xA4100000)
+  DPC.START = start;
+  // Store DPC Command End Address To DP End Register (0xA4100004)
+  DPC.END = end;
+}
 
-// Fill_ZBuffer_Triangle: lft,level,tile,yl,ym,yh, xl,xlf,dxldy,dxldyf, xh,xhf,dxhdy,dxhdyf, xm,xmf,dxmdy,dxmdyf
-// Word 0: Left Major Flag (0=Left Major, 1=Right Major), Number Of Mip-Maps Minus One, Tile ID, Y Coordinate Of Low, Mid Minor, Major Edge (Fixed Point S.11.2)
-// Word 1: X Coordinate Of Low    Edge Integer, Fraction, DxLDy Inverse Slope Of Low    Edge Integer, Fraction
-// Word 2: X Coordinate Of Major  Edge Integer, Fraction, DxHDy Inverse Slope Of Major  Edge Integer, Fraction
-// Word 3: X Coordinate Of Middle Edge Integer, Fraction, DxMDy Inverse Slope Of Middle Edge Integer, Fraction
-// Word 4: Z Inverse Depth Integer, Fraction, DzDx Change In Z Per Change In X Coordinate Integer, Fraction (ZBuffer Coefficients)
-// Word 5: DzDe Change In Z Along Major Edge Integer, Fraction, DzDy Change In Z Per Change In Y Coordinate Integer, Fraction
+// RDP COMMANDS
 
-// Texture_Triangle: lft,level,tile,yl,ym,yh, xl,xlf,dxldy,dxldyf, xh,xhf,dxhdy,dxhdyf, xm,xmf,dxmdy,dxmdyf
-// Word 0: Left Major Flag (0=Left Major, 1=Right Major), Number Of Mip-Maps Minus One, Tile ID, Y Coordinate Of Low, Mid Minor, Major Edge (Fixed Point S.11.2)
-// Word 1: X Coordinate Of Low    Edge Integer, Fraction, DxLDy Inverse Slope Of Low    Edge Integer, Fraction
-// Word 2: X Coordinate Of Major  Edge Integer, Fraction, DxHDy Inverse Slope Of Major  Edge Integer, Fraction
-// Word 3: X Coordinate Of Middle Edge Integer, Fraction, DxMDy Inverse Slope Of Middle Edge Integer, Fraction
-// Word 4:  S Texture Coordinate Integer, T Texture Coordinate Integer, W Normalized Inverse Depth Integer (Texture Coefficients)
-// Word 5:  DsDx Change In S, DtDx Change In T, DwDx Change In W Per Change In X Coordinate Integer
-// Word 6:  S Texture Coordinate Fraction, T Texture Coordinate Fraction, W Normalized Inverse Depth Fraction
-// Word 7:  DsDx Change In S, DtDx Change In T, DwDx Change In W Per Change In X Coordinate Fraction
-// Word 8:  DsDe Change In S, DtDe Change In T, DwDe Change In W Along The Edge Integer
-// Word 9:  DsDy Change In S, DtDy Change In T, DwDy Change In W Per Change In Y Coordinate Integer
-// Word 10: DsDe Change In S, DtDe Change In T, DwDe Change In W Along The Edge Fraction
-// Word 11: DsDy Change In S, DtDy Change In T, DwDy Change In W Per Change In Y Coordinate Fraction
+// No Op (No Operation)
+#define rdp_no_op \
+  0x00000000, \
+  0x00000000 \
 
-// Texture_ZBuffer_Triangle: lft,level,tile,yl,ym,yh, xl,xlf,dxldy,dxldyf, xh,xhf,dxhdy,dxhdyf, xm,xmf,dxmdy,dxmdyf
-// Word 0: Left Major Flag (0=Left Major, 1=Right Major), Number Of Mip-Maps Minus One, Tile ID, Y Coordinate Of Low, Mid Minor, Major Edge (Fixed Point S.11.2)
-// Word 1: X Coordinate Of Low    Edge Integer, Fraction, DxLDy Inverse Slope Of Low    Edge Integer, Fraction
-// Word 2: X Coordinate Of Major  Edge Integer, Fraction, DxHDy Inverse Slope Of Major  Edge Integer, Fraction
-// Word 3: X Coordinate Of Middle Edge Integer, Fraction, DxMDy Inverse Slope Of Middle Edge Integer, Fraction
-// Word 4:  S Texture Coordinate Integer, T Texture Coordinate Integer, W Normalized Inverse Depth Integer (Texture Coefficients)
-// Word 5:  DsDx Change In S, DtDx Change In T, DwDx Change In W Per Change In X Coordinate Integer
-// Word 6:  S Texture Coordinate Fraction, T Texture Coordinate Fraction, W Normalized Inverse Depth Fraction
-// Word 7:  DsDx Change In S, DtDx Change In T, DwDx Change In W Per Change In X Coordinate Fraction
-// Word 8:  DsDe Change In S, DtDe Change In T, DwDe Change In W Along The Edge Integer
-// Word 9:  DsDy Change In S, DtDy Change In T, DwDy Change In W Per Change In Y Coordinate Integer
-// Word 10: DsDe Change In S, DtDe Change In T, DwDe Change In W Along The Edge Fraction
-// Word 11: DsDy Change In S, DtDy Change In T, DwDy Change In W Per Change In Y Coordinate Fraction
-// Word 12: Z Inverse Depth Integer, Fraction, DzDx Change In Z Per Change In X Coordinate Integer, Fraction (ZBuffer Coefficients)
-// Word 13: DzDe Change In Z Along Major Edge Integer, Fraction, DzDy Change In Z Per Change In Y Coordinate Integer, Fraction
+// Fill Triangle (Flat Non-Shaded) Edge Coefficients
+#define rdp_fill_triangle( lft, level, tile, yl, ym, yh, xl, dxldy, xh, dxhdy, xm, dxmdy ) \
+  0x08000000 | (uint8_t)(lft) << 23 | (uint8_t)(level) << 19 | (uint8_t)(tile) << 16 | ((int)((float)(yl) * 4.0) & 0x3FFF), \
+  ((int)((float)(ym) * 4.0) & 0x3FFF) << 16 | ((int)((float)(yh) * 4.0) & 0x3FFF), \
+  (int)((float)(xl) * 65536.0), \
+  (int)((float)(dxldy) * 65536.0), \
+  (int)((float)(xh) * 65536.0), \
+  (int)((float)(dxhdy) * 65536.0), \
+  (int)((float)(xm) * 65536.0), \
+  (int)((float)(dxmdy) * 65536.0) \
 
-// Shade_Triangle: lft,level,tile,yl,ym,yh, xl,xlf,dxldy,dxldyf, xh,xhf,dxhdy,dxhdyf, xm,xmf,dxmdy,dxmdyf
-// Word 0: Left Major Flag (0=Left Major, 1=Right Major), Number Of Mip-Maps Minus One, Tile ID, Y Coordinate Of Low, Mid Minor, Major Edge (Fixed Point S.11.2)
-// Word 1: X Coordinate Of Low    Edge Integer, Fraction, DxLDy Inverse Slope Of Low    Edge Integer, Fraction
-// Word 2: X Coordinate Of Major  Edge Integer, Fraction, DxHDy Inverse Slope Of Major  Edge Integer, Fraction
-// Word 3: X Coordinate Of Middle Edge Integer, Fraction, DxMDy Inverse Slope Of Middle Edge Integer, Fraction
-// Word 4:  Red Color Component Integer, Green Color Component Integer, Blue Color Component Integer, Alpha Color Component Integer (Shade Coefficients)
-// Word 5:  DrDx Change In Red, DgDx Change In Green, DbDx Change In Blue, DaDx Change In Alpha Per Change In X Coordinate Integer
-// Word 6:  Red Color Component Fraction, Green Color Component Fraction, Blue Color Component Fraction, Alpha Color Component Fraction
-// Word 7:  DrDx Change In Red, DgDx Change In Green, DbDx Change In Blue, DaDx Change In Alpha Per Change In X Coordinate Fraction
-// Word 8:  DrDe Change In Red, DgDe Change In Green, DbDe Change In Blue, DaDe Change In Alpha Along The Edge Integer
-// Word 9:  DrDy Change In Red, DgDy Change In Green, DbDy Change In Blue, DaDy Change In Alpha Per Change In Y Coordinate Integer
-// Word 10: DrDe Change In Red, DgDe Change In Green, DbDe Change In Blue, DaDe Change In Alpha Along The Edge Fraction
-// Word 11: DrDy Change In Red, DgDy Change In Green, DbDy Change In Blue, DaDy Change In Alpha Per Change In Y Coordinate Fraction
+// Fill Z-Buffer Triangle (Flat Non-Shaded Z-Buffered) Edge Coefficients
+#define rdp_fill_zbuffer_triangle( lft, level, tile, yl, ym, yh, xl, dxldy, xh, dxhdy, xm, dxmdy ) \
+  0x09000000 | (uint8_t)(lft) << 23 | (uint8_t)(level) << 19 | (uint8_t)(tile) << 16 | ((int)((float)(yl) * 4.0) & 0x3FFF), \
+  ((int)((float)(ym) * 4.0) & 0x3FFF) << 16 | ((int)((float)(yh) * 4.0) & 0x3FFF), \
+  (int)((float)(xl) * 65536.0), \
+  (int)((float)(dxldy) * 65536.0), \
+  (int)((float)(xh) * 65536.0), \
+  (int)((float)(dxhdy) * 65536.0), \
+  (int)((float)(xm) * 65536.0), \
+  (int)((float)(dxmdy) * 65536.0) \
 
-// Shade_ZBuffer_Triangle: lft,level,tile,yl,ym,yh, xl,xlf,dxldy,dxldyf, xh,xhf,dxhdy,dxhdyf, xm,xmf,dxmdy,dxmdyf
-// Word 0: Left Major Flag (0=Left Major, 1=Right Major), Number Of Mip-Maps Minus One, Tile ID, Y Coordinate Of Low, Mid Minor, Major Edge (Fixed Point S.11.2)
-// Word 1: X Coordinate Of Low    Edge Integer, Fraction, DxLDy Inverse Slope Of Low    Edge Integer, Fraction
-// Word 2: X Coordinate Of Major  Edge Integer, Fraction, DxHDy Inverse Slope Of Major  Edge Integer, Fraction
-// Word 3: X Coordinate Of Middle Edge Integer, Fraction, DxMDy Inverse Slope Of Middle Edge Integer, Fraction
-// Word 4:  Red Color Component Integer, Green Color Component Integer, Blue Color Component Integer, Alpha Color Component Integer (Shade Coefficients)
-// Word 5:  DrDx Change In Red, DgDx Change In Green, DbDx Change In Blue, DaDx Change In Alpha Per Change In X Coordinate Integer
-// Word 6:  Red Color Component Fraction, Green Color Component Fraction, Blue Color Component Fraction, Alpha Color Component Fraction
-// Word 7:  DrDx Change In Red, DgDx Change In Green, DbDx Change In Blue, DaDx Change In Alpha Per Change In X Coordinate Fraction
-// Word 8:  DrDe Change In Red, DgDe Change In Green, DbDe Change In Blue, DaDe Change In Alpha Along The Edge Integer
-// Word 9:  DrDy Change In Red, DgDy Change In Green, DbDy Change In Blue, DaDy Change In Alpha Per Change In Y Coordinate Integer
-// Word 10: DrDe Change In Red, DgDe Change In Green, DbDe Change In Blue, DaDe Change In Alpha Along The Edge Fraction
-// Word 11: DrDy Change In Red, DgDy Change In Green, DbDy Change In Blue, DaDy Change In Alpha Per Change In Y Coordinate Fraction
-// Word 12: Z Inverse Depth Integer, Fraction, DzDx Change In Z Per Change In X Coordinate Integer, Fraction (ZBuffer Coefficients)
-// Word 13: DzDe Change In Z Along Major Edge Integer, Fraction, DzDy Change In Z Per Change In Y Coordinate Integer, Fraction
+// Texture Triangle (Textured Non-Shaded) Edge Coefficients
+#define rdp_texture_triangle( lft, level, tile, yl, ym, yh, xl, dxldy, xh, dxhdy, xm, dxmdy ) \
+  0x0A000000 | (uint8_t)(lft) << 23 | (uint8_t)(level) << 19 | (uint8_t)(tile) << 16 | ((int)((float)(yl) * 4.0) & 0x3FFF), \
+  ((int)((float)(ym) * 4.0) & 0x3FFF) << 16 | ((int)((float)(yh) * 4.0) & 0x3FFF), \
+  (int)((float)(xl) * 65536.0), \
+  (int)((float)(dxldy) * 65536.0), \
+  (int)((float)(xh) * 65536.0), \
+  (int)((float)(dxhdy) * 65536.0), \
+  (int)((float)(xm) * 65536.0), \
+  (int)((float)(dxmdy) * 65536.0) \
 
-// Shade_Texture_Triangle: lft,level,tile,yl,ym,yh, xl,xlf,dxldy,dxldyf, xh,xhf,dxhdy,dxhdyf, xm,xmf,dxmdy,dxmdyf
-// Word 0: Left Major Flag (0=Left Major, 1=Right Major), Number Of Mip-Maps Minus One, Tile ID, Y Coordinate Of Low, Mid Minor, Major Edge (Fixed Point S.11.2)
-// Word 1: X Coordinate Of Low    Edge Integer, Fraction, DxLDy Inverse Slope Of Low    Edge Integer, Fraction
-// Word 2: X Coordinate Of Major  Edge Integer, Fraction, DxHDy Inverse Slope Of Major  Edge Integer, Fraction
-// Word 3: X Coordinate Of Middle Edge Integer, Fraction, DxMDy Inverse Slope Of Middle Edge Integer, Fraction
-// Word 4:  Red Color Component Integer, Green Color Component Integer, Blue Color Component Integer, Alpha Color Component Integer (Shade Coefficients)
-// Word 5:  DrDx Change In Red, DgDx Change In Green, DbDx Change In Blue, DaDx Change In Alpha Per Change In X Coordinate Integer
-// Word 6:  Red Color Component Fraction, Green Color Component Fraction, Blue Color Component Fraction, Alpha Color Component Fraction
-// Word 7:  DrDx Change In Red, DgDx Change In Green, DbDx Change In Blue, DaDx Change In Alpha Per Change In X Coordinate Fraction
-// Word 8:  DrDe Change In Red, DgDe Change In Green, DbDe Change In Blue, DaDe Change In Alpha Along The Edge Integer
-// Word 9:  DrDy Change In Red, DgDy Change In Green, DbDy Change In Blue, DaDy Change In Alpha Per Change In Y Coordinate Integer
-// Word 10: DrDe Change In Red, DgDe Change In Green, DbDe Change In Blue, DaDe Change In Alpha Along The Edge Fraction
-// Word 11: DrDy Change In Red, DgDy Change In Green, DbDy Change In Blue, DaDy Change In Alpha Per Change In Y Coordinate Fraction
-// Word 12: S Texture Coordinate Integer, T Texture Coordinate Integer, W Normalized Inverse Depth Integer (Texture Coefficients)
-// Word 13: DsDx Change In S, DtDx Change In T, DwDx Change In W Per Change In X Coordinate Integer
-// Word 14: S Texture Coordinate Fraction, T Texture Coordinate Fraction, W Normalized Inverse Depth Fraction
-// Word 15: DsDx Change In S, DtDx Change In T, DwDx Change In W Per Change In X Coordinate Fraction
-// Word 16: DsDe Change In S, DtDe Change In T, DwDe Change In W Along The Edge Integer
-// Word 17: DsDy Change In S, DtDy Change In T, DwDy Change In W Per Change In Y Coordinate Integer
-// Word 18: DsDe Change In S, DtDe Change In T, DwDe Change In W Along The Edge Fraction
-// Word 19: DsDy Change In S, DtDy Change In T, DwDy Change In W Per Change In Y Coordinate Fraction
+// Texture Z-Buffer Triangle (Textured Non-Shaded Z-Buffered) Edge Coefficients
+#define rdp_texture_zbuffer_triangle( lft, level, tile, yl, ym, yh, xl, dxldy, xh, dxhdy, xm, dxmdy ) \
+  0x0B000000 | (uint8_t)(lft) << 23 | (uint8_t)(level) << 19 | (uint8_t)(tile) << 16 | ((int)((float)(yl) * 4.0) & 0x3FFF), \
+  ((int)((float)(ym) * 4.0) & 0x3FFF) << 16 | ((int)((float)(yh) * 4.0) & 0x3FFF), \
+  (int)((float)(xl) * 65536.0), \
+  (int)((float)(dxldy) * 65536.0), \
+  (int)((float)(xh) * 65536.0), \
+  (int)((float)(dxhdy) * 65536.0), \
+  (int)((float)(xm) * 65536.0), \
+  (int)((float)(dxmdy) * 65536.0) \
 
-// Shade_Texture_Z_Buffer_Triangle: lft,level,tile,yl,ym,yh, xl,xlf,dxldy,dxldyf, xh,xhf,dxhdy,dxhdyf, xm,xmf,dxmdy,dxmdyf
-// Word 0: Left Major Flag (0=Left Major, 1=Right Major), Number Of Mip-Maps Minus One, Tile ID, Y Coordinate Of Low, Mid Minor, Major Edge (Fixed Point S.11.2)
-// Word 1: X Coordinate Of Low    Edge Integer, Fraction, DxLDy Inverse Slope Of Low    Edge Integer, Fraction
-// Word 2: X Coordinate Of Major  Edge Integer, Fraction, DxHDy Inverse Slope Of Major  Edge Integer, Fraction
-// Word 3: X Coordinate Of Middle Edge Integer, Fraction, DxMDy Inverse Slope Of Middle Edge Integer, Fraction
-// Word 4:  Red Color Component Integer, Green Color Component Integer, Blue Color Component Integer, Alpha Color Component Integer (Shade Coefficients)
-// Word 5:  DrDx Change In Red, DgDx Change In Green, DbDx Change In Blue, DaDx Change In Alpha Per Change In X Coordinate Integer
-// Word 6:  Red Color Component Fraction, Green Color Component Fraction, Blue Color Component Fraction, Alpha Color Component Fraction
-// Word 7:  DrDx Change In Red, DgDx Change In Green, DbDx Change In Blue, DaDx Change In Alpha Per Change In X Coordinate Fraction
-// Word 8:  DrDe Change In Red, DgDe Change In Green, DbDe Change In Blue, DaDe Change In Alpha Along The Edge Integer
-// Word 9:  DrDy Change In Red, DgDy Change In Green, DbDy Change In Blue, DaDy Change In Alpha Per Change In Y Coordinate Integer
-// Word 10: DrDe Change In Red, DgDe Change In Green, DbDe Change In Blue, DaDe Change In Alpha Along The Edge Fraction
-// Word 11: DrDy Change In Red, DgDy Change In Green, DbDy Change In Blue, DaDy Change In Alpha Per Change In Y Coordinate Fraction
-// Word 12: S Texture Coordinate Integer, T Texture Coordinate Integer, W Normalized Inverse Depth Integer (Texture Coefficients)
-// Word 13: DsDx Change In S, DtDx Change In T, DwDx Change In W Per Change In X Coordinate Integer
-// Word 14: S Texture Coordinate Fraction, T Texture Coordinate Fraction, W Normalized Inverse Depth Fraction
-// Word 15: DsDx Change In S, DtDx Change In T, DwDx Change In W Per Change In X Coordinate Fraction
-// Word 16: DsDe Change In S, DtDe Change In T, DwDe Change In W Along The Edge Integer
-// Word 17: DsDy Change In S, DtDy Change In T, DwDy Change In W Per Change In Y Coordinate Integer
-// Word 18: DsDe Change In S, DtDe Change In T, DwDe Change In W Along The Edge Fraction
-// Word 19: DsDy Change In S, DtDy Change In T, DwDy Change In W Per Change In Y Coordinate Fraction
-// Word 20: Z Inverse Depth Integer, Fraction, DzDx Change In Z Per Change In X Coordinate Integer, Fraction (ZBuffer Coefficients)
-// Word 21: DzDe Change In Z Along Major Edge Integer, Fraction, DzDy Change In Z Per Change In Y Coordinate Integer, Fraction
+// Shade Triangle (Goraud Shaded) Edge Coefficients
+#define rdp_shade_triangle( lft, level, tile, yl, ym, yh, xl, dxldy, xh, dxhdy, xm, dxmdy ) \
+  0x0C000000 | (uint8_t)(lft) << 23 | (uint8_t)(level) << 19 | (uint8_t)(tile) << 16 | ((int)((float)(yl) * 4.0) & 0x3FFF), \
+  ((int)((float)(ym) * 4.0) & 0x3FFF) << 16 | ((int)((float)(yh) * 4.0) & 0x3FFF), \
+  (int)((float)(xl) * 65536.0), \
+  (int)((float)(dxldy) * 65536.0), \
+  (int)((float)(xh) * 65536.0), \
+  (int)((float)(dxhdy) * 65536.0), \
+  (int)((float)(xm) * 65536.0), \
+  (int)((float)(dxmdy) * 65536.0) \
 
-// Shade_Coefficients: r,g,b,a, drdx,dgdx,dbdx,dadx, rf,gf,bf,af, drdxf,dgdxf,dbdxf,dadxf, drde,dgde,dbde,dade, drdy,dgdy,dbdy,dady, drdef,dgdef,dbdef,dadef, drdyf,dgdyf,dbdyf,dadyf
-// Word 0: Red Color Component Integer, Green Color Component Integer, Blue Color Component Integer, Alpha Color Component Integer (Shade Coefficients)
-// Word 1: DrDx Change In Red, DgDx Change In Green, DbDx Change In Blue, DaDx Change In Alpha Per Change In X Coordinate Integer
-// Word 2: Red Color Component Fraction, Green Color Component Fraction, Blue Color Component Fraction, Alpha Color Component Fraction
-// Word 3: DrDx Change In Red, DgDx Change In Green, DbDx Change In Blue, DaDx Change In Alpha Per Change In X Coordinate Fraction
-// Word 4: DrDe Change In Red, DgDe Change In Green, DbDe Change In Blue, DaDe Change In Alpha Along The Edge Integer
-// Word 5: DrDy Change In Red, DgDy Change In Green, DbDy Change In Blue, DaDy Change In Alpha Per Change In Y Coordinate Integer
-// Word 6: DrDe Change In Red, DgDe Change In Green, DbDe Change In Blue, DaDe Change In Alpha Along The Edge Fraction
-// Word 7: DrDy Change In Red, DgDy Change In Green, DbDy Change In Blue, DaDy Change In Alpha Per Change In Y Coordinate Fraction
+// Shade Z-Buffer Triangle (Goraud Shaded Z-Buffered) Edge Coefficients
+#define rdp_shade_zbuffer_triangle( lft, level, tile, yl, ym, yh, xl, dxldy, xh, dxhdy, xm, dxmdy ) \
+  0x0D000000 | (uint8_t)(lft) << 23 | (uint8_t)(level) << 19 | (uint8_t)(tile) << 16 | ((int)((float)(yl) * 4.0) & 0x3FFF), \
+  ((int)((float)(ym) * 4.0) & 0x3FFF) << 16 | ((int)((float)(yh) * 4.0) & 0x3FFF), \
+  (int)((float)(xl) * 65536.0), \
+  (int)((float)(dxldy) * 65536.0), \
+  (int)((float)(xh) * 65536.0), \
+  (int)((float)(dxhdy) * 65536.0), \
+  (int)((float)(xm) * 65536.0), \
+  (int)((float)(dxmdy) * 65536.0) \
 
-// Texture_Coefficients: s,t,w, dsdx,dtdx,dwdx, sf,tf,wf, dsdxf,dtdxf,dwdxf, dsde,dtde,dwde, dsdy,dtdy,dwdy, dsdef,dtdef,dwdef, dsdyf,dtdyf,dwdyf
-// Word 0: S Texture Coordinate Integer, T Texture Coordinate Integer, W Normalized Inverse Depth Integer
-// Word 1: DsDx Change In S, DtDx Change In T, DwDx Change In W Per Change In X Coordinate Integer
-// Word 2: S Texture Coordinate Fraction, T Texture Coordinate Fraction, W Normalized Inverse Depth Fraction
-// Word 3: DsDx Change In S, DtDx Change In T, DwDx Change In W Per Change In X Coordinate Fraction
-// Word 4: DsDe Change In S, DtDe Change In T, DwDe Change In W Along The Edge Integer
-// Word 5: DsDy Change In S, DtDy Change In T, DwDy Change In W Per Change In Y Coordinate Integer
-// Word 6: DsDe Change In S, DtDe Change In T, DwDe Change In W Along The Edge Fraction
-// Word 7: DsDy Change In S, DtDy Change In T, DwDy Change In W Per Change In Y Coordinate Fraction
+// Shade Texture Triangle (Goraud Shaded Textured) Edge Coefficients
+#define rdp_shade_texture_triangle( lft, level, tile, yl, ym, yh, xl, dxldy, xh, dxhdy, xm, dxmdy ) \
+  0x0E000000 | (uint8_t)(lft) << 23 | (uint8_t)(level) << 19 | (uint8_t)(tile) << 16 | ((int)((float)(yl) * 4.0) & 0x3FFF), \
+  ((int)((float)(ym) * 4.0) & 0x3FFF) << 16 | ((int)((float)(yh) * 4.0) & 0x3FFF), \
+  (int)((float)(xl) * 65536.0), \
+  (int)((float)(dxldy) * 65536.0), \
+  (int)((float)(xh) * 65536.0), \
+  (int)((float)(dxhdy) * 65536.0), \
+  (int)((float)(xm) * 65536.0), \
+  (int)((float)(dxmdy) * 65536.0) \
 
-// ZBuffer_Coefficients: z,zf,dzdx,dzdxf, dzde,dzdef,dzdy,dzdyf
-// Word 0: Z Inverse Depth Integer, Fraction, DzDx Change In Z Per Change In X Coordinate Integer, Fraction (ZBuffer Coefficients)
-// Word 1: DzDe Change In Z Along Major Edge Integer, Fraction, DzDy Change In Z Per Change In Y Coordinate Integer, Fraction
+// Shade Texture Z-Buffer Triangle (Goraud Shaded Textured Z-Buffered) Edge Coefficients
+#define rdp_shade_texture_zbuffer_triangle( lft, level, tile, yl, ym, yh, xl, dxldy, xh, dxhdy, xm, dxmdy ) \
+  0x0F000000 | (uint8_t)(lft) << 23 | (uint8_t)(level) << 19 | (uint8_t)(tile) << 16 | ((int)((float)(yl) * 4.0) & 0x3FFF), \
+  ((int)((float)(ym) * 4.0) & 0x3FFF) << 16 | ((int)((float)(yh) * 4.0) & 0x3FFF), \
+  (int)((float)(xl) * 65536.0), \
+  (int)((float)(dxldy) * 65536.0), \
+  (int)((float)(xh) * 65536.0), \
+  (int)((float)(dxhdy) * 65536.0), \
+  (int)((float)(xm) * 65536.0), \
+  (int)((float)(dxmdy) * 65536.0) \
 
-// Texture_Rectangle: xl,yl, tile, xh,yh, s,t, dsdx,dtdy
-// Word 0: Bottom Right X/Y, Tile ID, Top Left X/Y (Fixed Point 10.2)
-// Word 1: S/T Texture Coordinate Top Left (Fixed Point S.10.5), DsDx Change In S Per Change In X, DtDy Change In T Per Change In Y (Fixed Point S.5.10)
+// Shade Coefficients (Concat With Triangle Edge Coefficients Commands)
+#define rdp_shade_coefficients( r, g, b, a, drdx, dgdx, dbdx, dadx, drde, dgde, dbde, dade, drdy, dgdy, dbdy, dady ) \
+  (int)((float)(r)) << 16 | ((int)((float)(g)) & 0xFFFF), \
+  (int)((float)(b)) << 16 | ((int)((float)(a)) & 0xFFFF), \
+  (int)((float)(drdx)) << 16 | ((int)((float)(dgdx)) & 0xFFFF), \
+  (int)((float)(dbdx)) << 16 | ((int)((float)(dadx)) & 0xFFFF), \
+  (int)((float)(r) * 65536.0) << 16 | ((int)((float)(g) * 65536.0) & 0xFFFF), \
+  (int)((float)(b) * 65536.0) << 16 | ((int)((float)(a) * 65536.0) & 0xFFFF), \
+  (int)((float)(drdx) * 65536.0) << 16 | ((int)((float)(dgdx) * 65536.0) & 0xFFFF), \
+  (int)((float)(dbdx) * 65536.0) << 16 | ((int)((float)(dadx) * 65536.0) & 0xFFFF), \
+  (int)((float)(drde)) << 16 | ((int)((float)(dgde)) & 0xFFFF), \
+  (int)((float)(dbde)) << 16 | ((int)((float)(dade)) & 0xFFFF), \
+  (int)((float)(drdy)) << 16 | ((int)((float)(dgdy)) & 0xFFFF), \
+  (int)((float)(dbdy)) << 16 | ((int)((float)(dady)) & 0xFFFF), \
+  (int)((float)(drde) * 65536.0) << 16 | ((int)((float)(dgde) * 65536.0) & 0xFFFF), \
+  (int)((float)(dbde) * 65536.0) << 16 | ((int)((float)(dade) * 65536.0) & 0xFFFF), \
+  (int)((float)(drdy) * 65536.0) << 16 | ((int)((float)(dgdy) * 65536.0) & 0xFFFF), \
+  (int)((float)(dbdy) * 65536.0) << 16 | ((int)((float)(dady) * 65536.0) & 0xFFFF) \
 
-// Texture_Rectangle_Flip: xl,yl, tile, xh,yh, s,t, dsdx,dtdy ; Same As Texture Rectangle Except Hardware Swaps S/T & DsDx/DtDy
-// Word 0: Bottom Right X/Y, Tile ID, Top Left X/Y (Fixed Point 10.2)
-// Word 1: S/T Texture Coordinate Top Left (Fixed Point S.10.5), DsDx Change In S Per Change In X, DtDy Change In T Per Change In Y (Fixed Point S.5.10)
+// Texture Coefficients (Concat With Triangle Edge Coefficients Commands)
+#define rdp_texture_coefficients( s, t, w, dsdx, dtdx, dwdx, dsde, dtde, dwde, dsdy, dtdy, dwdy ) \
+  (int)((float)(s)) << 16 | ((int)((float)(t)) & 0xFFFF), \
+  (int)((float)(w)) << 16, \
+  (int)((float)(dsdx)) << 16 | ((int)((float)(dtdx)) & 0xFFFF), \
+  (int)((float)(dwdx)) << 16, \
+  (int)((float)(s) * 65536.0) << 16 | ((int)((float)(t) * 65536.0) & 0xFFFF), \
+  (int)((float)(w) * 65536.0) << 16, \
+  (int)((float)(dsdx) * 65536.0) << 16 | ((int)((float)(dtdx) * 65536.0) & 0xFFFF), \
+  (int)((float)(dwdx) * 65536.0) << 16, \
+  (int)((float)(dsde)) << 16 | ((int)((float)(dtde)) & 0xFFFF), \
+  (int)((float)(dwde)) << 16, \
+  (int)((float)(dsdy)) << 16 | ((int)((float)(dtdy)) & 0xFFFF), \
+  (int)((float)(dwdy)) << 16, \
+  (int)((float)(dsde) * 65536.0) << 16 | ((int)((float)(dtde) * 65536.0) & 0xFFFF), \
+  (int)((float)(dwde) * 65536.0) << 16, \
+  (int)((float)(dsdy) * 65536.0) << 16 | ((int)((float)(dtdy) * 65536.0) & 0xFFFF), \
+  (int)((float)(dwdy) * 65536.0) << 16 \
 
-// Sync_Load: Stall Execution Of Load Commands, Until Preceeding Primitives Completely Finish (Usually Preceed Load Commands)
+// Z-Buffer Coefficients (Concat With Triangle Edge Coefficients Commands)
+#define rdp_zbuffer_coefficients( z, dzdx, dzde, dzdy ) \
+  (int)((float)(z) * 65536.0), \
+  (int)((float)(dzdx) * 65536.0), \
+  (int)((float)(dzde) * 65536.0), \
+  (int)((float)(dzdy) * 65536.0) \
 
-// Sync_Pipe: Stall Pipeline, Until Preceeding Primitives Completely Finish (Software Can Optimize Usage)
+// Texture Rectangle (Top Left To Bottom Right)
+#define rdp_texture_rectangle( xh, yh, xl, yl, s, t, dsdx, dtdy, tile ) \
+  0x24000000 | ((int)((float)(xl) * 4.0) & 0xFFF) << 12 | ((int)((float)(yl) * 4.0) & 0xFFF), \
+  (uint8_t)(tile) << 24 | ((int)((float)(xh) * 4.0) & 0xFFF) << 12 | ((int)((float)(yh) * 4.0) & 0xFFF), \
+  (int)((float)(s) * 32.0) << 16 | ((int)((float)(t) * 32.0) & 0xFFFF), \
+  (int)((float)(dsdx) * 1024.0) << 16 | ((int)((float)(dtdy) * 1024.0) & 0xFFFF) \
 
-// Sync_Tile: Allows Synchronization Between Commands That Write To The Same Tile Descriptor That An Immediately Previous Command Is Reading
+// Texture Rectangle Flip (Top Left To Bottom Right)
+#define rdp_texture_rectangle_flip( xh, yh, xl, yl, s, t, dsdx, dtdy, tile ) \
+  0x25000000 | ((int)((float)(xl) * 4.0) & 0xFFF) << 12 | ((int)((float)(yl) * 4.0) & 0xFFF), \
+  (uint8_t)(tile) << 24 | ((int)((float)(xh) * 4.0) & 0xFFF) << 12 | ((int)((float)(yh) * 4.0) & 0xFFF), \
+  (int)((float)(s) * 32.0) << 16 | ((int)((float)(t) * 32.0) & 0xFFFF), \
+  (int)((float)(dsdx) * 1024.0) << 16 | ((int)((float)(dtdy) * 1024.0) & 0xFFFF) \
 
-// Sync_Full: Stall RDP Until Last DRAM Buffer Is Read Or Written From Any Preceeding Primitive (Needed If Memory Is To Be Reused)
+// Sync Load
+#define rdp_sync_load \
+  0x26000000, \
+  0x00000000 \
 
-// Set_Key_GB: wg,wb,cg,sg,cb,sb ; Set The Coefficients Used For Green/Blue Keying, KEY G/B = CLAMP(0.0, -ABS((G/B - CENTER)* SCALE) + WIDTH, 1.0) KEY ALPHA = MINIMUM OF KEY R/G/B
-// Word: WIDTH G/B (Size Of Half Key Window Including Soft Edge)*SCALE, CENTER G/B Defines Color Or Intensity At Which Key Is Active (0..255), SCALE GB 1.0/(SIZE OF SOFT EDGE) (0..255)
+// Sync Pipe
+#define rdp_sync_pipe \
+  0x27000000, \
+  0x00000000 \
 
-// Set_Key_R: wr,cr,sr ; Set The Coefficients Used For Red Keying, KEY R = CLAMP(0.0, -ABS((R - CENTER)* SCALE) + WIDTH, 1.0) KEY ALPHA = MINIMUM OF KEY R/G/B
-// Word: WIDTH R (Size Of Half Key Window Including Soft Edge)*SCALE, CENTER R Defines Color Or Intensity At Which Key Is Active (0..255), SCALE R 1.0/(SIZE OF SOFT EDGE) (0..255)
+// Sync Tile
+#define rdp_sync_tile \
+  0x28000000, \
+  0x00000000 \
 
-// Set_Convert: k0,k1,k2,k3,k4,k5 ; Updates The Coefficients For Converting YUV Pixels To RGB, R = C0*(Y-16)+C1*V, G = C0*(Y-16)+C2*U-C3*V, B = C0*(Y-16)+C4*U
-// Word: K0, K1, K2, K3, K4, K5 Term Of YUV-RGB Conversion Matrix
+// Sync Full
+#define rdp_sync_full \
+  0x29000000, \
+  0x00000000 \
 
-// Set_Scissor: xh,yh,xl,yl,lo ; Set The Scissoring Of Primitives
-// Word: Top Left X/Y, Bottom Right X/Y (Fixed Point 10.2), Scissor Field Enable & Scissor Field Even/Odd
+// Set Key GB (Coefficients Used For Green/Blue Keying)
+#define rdp_set_key_gb( widthg, centerg, scaleg, widthb, centerb, scaleb ) \
+  0x2A000000 | ((int)((float)(widthg) * 16.0) & 0xFFF) << 12 | ((int)((float)(widthb) * 16.0) & 0xFFF), \
+  (uint8_t)(centerg) << 24 | (uint8_t)(scaleg) << 16 | (uint8_t)(centerb) << 8 | (uint8_t)(scaleb) \
+
+// Set Key R (Coefficients Used For Red Keying)
+#define rdp_set_key_r( width, center, scale ) \
+  0x2B000000, \
+  (int)((float)(width) * 16.0) << 16 | (uint8_t)(center) << 8 | (uint8_t)(scale) \
+
+// Set Convert (Coefficients For Converting YUV Pixels To RGB)
+#define rdp_set_convert( k0, k1, k2, k3, k4, k5 ) \
+  0x2C000000 | ((int)((float)(k0) * 128.0) & 0x1FF) << 13 | ((int)((float)(k1) * 128.0) & 0x1FF) << 4 | ((int)((float)(k2) * 128.0) & 0x1FF) >> 5, \
+  (int)((float)(k2) * 128.0) << 27 | ((int)((float)(k3) * 128.0) & 0x1FF) << 18 | ((int)((float)(k4) * 128.0) & 0x1FF) << 9 | ((int)((float)(k5) * 128.0) & 0x1FF) \
+
+// Set Scissor Word
 #define SCISSOR_EVEN 0 // Set_Scissor O: Field Even (Bit 24)
 #define SCISSOR_ODD 1  // Set_Scissor O: Field Odd (Bit 24)
 #define SCISSOR_FIELD_DISABLE 0 // Set_Scissor F: Scissor Field Disable (Bit 25)
 #define SCISSOR_FIELD_ENABLE 1  // Set_Scissor F: Scissor Field Enable (Bit 25)
 
-// Set_Prim_Depth: pz,pdz ; Set The Depth Of Primitives
-// Word: Primitive Z Depth, Primitive Delta Z Depth
+// Set Scissor (Top Left To Bottom Right)
+#define rdp_set_scissor( xh, yh, xl, yl, f, o ) \
+  0x2D000000 | ((int)((float)(xh) * 4.0) & 0xFFF) << 12 | ((int)((float)(yh) * 4.0) & 0xFFF), \
+  (uint8_t)(f) << 25 | (uint8_t)(o) << 24 | ((int)((float)(xl) * 4.0) & 0xFFF) << 12 | ((int)((float)(yl) * 4.0) & 0xFFF) \
 
-// Set_Other_Modes: Settings ; Set The Other Modes
-// Set_Other_Modes LO Word
+// Set Primitive Depth (Primitive Z, Primitive Delta Z)
+#define rdp_set_prim_depth( z, dz ) \
+  0x2E000000, \
+  (int)((float)(z)) << 16 | ((int)((float)(dz)) & 0xFFFF) \
+
+// Set Other Modes LO Word
 #define ALPHA_COMPARE_EN 0x00000000000001 // Set_Other_Modes A: Conditional Color Write On Alpha Compare (Bit 0)
 #define DITHER_ALPHA_EN 0x00000000000002 // Set_Other_Modes B: Use Random Noise In Alpha Compare, Otherwise Use Blend Alpha In Alpha Compare (Bit 1)
 #define Z_SOURCE_SEL 0x00000000000004 // Set_Other_Modes C: Choose Between Primitive Z And Pixel Z (Bit 2)
@@ -269,7 +309,7 @@
 #define B_M1A_0_1 0x00000040000000 // Set_Other_Modes V: Blend Modeword, Multiply 1a Input Select 1, Cycle 0 (Bit 30..31)
 #define B_M1A_0_2 0x00000080000000 // Set_Other_Modes V: Blend Modeword, Multiply 1a Input Select 2, Cycle 0 (Bit 30..31)
 #define B_M1A_0_3 0x000000C0000000 // Set_Other_Modes V: Blend Modeword, Multiply 1a Input Select 3, Cycle 0 (Bit 30..31)
-// Set_Other_Modes HI Word
+// Set Other Modes HI Word
 //*RESERVED* 0x00000F00000000 // Set_Other_Modes: Reserved For Future Use, Default Value Is 0xF (Bit 32..35)
 #define ALPHA_DITHER_SEL_PATTERN 0x00000000000000   // Set_Other_Modes V1: Alpha Dither Selection Pattern (Bit 36..37)
 #define ALPHA_DITHER_SEL_PATTERNB 0x00001000000000  // Set_Other_Modes V1: Alpha Dither Selection ~Pattern (Bit 36..37)
@@ -298,21 +338,32 @@
 //*RESERVED* 0x40000000000000 // Set_Other_Modes j: This Mode Bit Is Not Currently Used, But May Be In The Future (Bit 54)
 #define ATOMIC_PRIM 0x80000000000000 // Set_Other_Modes k: Force Primitive To Be Written To Frame Buffer Before Read Of Following Primitive
 
-// Load_Tlut: sl,tl,tile,sh,th ; Used To Initiate A Load From DRAM Of An Indexed Texture Lookup Table (TLUT) (This Table Dereferences Color Indexed Texels Before Texture Filtering)
-// Word: Low S Index Into Table (0..255), Low T Normally Zero, Tile ID, High S Index Into Table, High T Normally Zero (Fixed Point 10.2, Fractional Bits Should Be Zero)
+// Set Other Modes
+#define rdp_set_other_modes( mode ) \
+  0x2F000000 | (uint32_t)((mode) >> 32), \
+  (uint32_t)(mode) \
 
-// Set_Tile_Size: sl,tl,tile,sh,th ; Set The Tile Size
-// Word: Low S/T Coordinate Of Tile In Image, Tile ID, High S/T Coordinate Of Tile In Image (Fixed Point 10.2)
+// Load TLUT (Top Left To Bottom Right)
+#define rdp_load_tlut( sl, tl, sh, th, tile ) \
+  0x30000000 | ((int)((float)(sl) * 4.0) & 0xFFF) << 12 | ((int)((float)(tl) * 4.0) & 0xFFF), \
+  (uint8_t)(tile) << 24 | ((int)((float)(sh) * 4.0) & 0xFFF) << 12 | ((int)((float)(th) * 4.0) & 0xFFF) \
 
-// Load_Block: sl,tl,tile,sh,dxt ; Loads A TMEM Tile With A Single Memory "Span" From SL,TL To SH,TL (During Tile Load, T Coordinate Is Incremented By DxT Every 8 TMEM Bytes)
-// Word: Low S/T Coordinate Of Tile In Image, Tile ID, High S Coordinate Of Tile In Image (Fixed Point 10.2), Unsigned Increment Value
+// Set Tile Size (Top Left To Bottom Right)
+#define rdp_set_tile_size( sl, tl, sh, th, tile ) \
+  0x32000000 | ((int)((float)(sl) * 4.0) & 0xFFF) << 12 | ((int)((float)(tl) * 4.0) & 0xFFF), \
+  (uint8_t)(tile) << 24 | ((int)((float)(sh) * 4.0) & 0xFFF) << 12 | ((int)((float)(th) * 4.0) & 0xFFF) \
 
-// Load_Tile: sl,tl,tile,sh,th ; Loads A TMEM Tile
-// Word: Low S/T Coordinate Of Tile In Image, Tile ID, High S/T Coordinate Of Tile In Image (Fixed Point 10.2)
+// Load Block (Top Left To Bottom Right)
+#define rdp_load_block( sl, tl, sh, dxt, tile ) \
+  0x33000000 | ((int)((float)(sl)) & 0xFFF) << 12 | ((int)((float)(tl)) & 0xFFF), \
+  (uint8_t)(tile) << 24 | ((int)((float)(sh)) & 0xFFF) << 12 | ((int)((float)(dxt) * 2048.0) & 0xFFF) \
 
-// Set_Tile: hi,lo ; Set The Tile
-// Word: Set Tile Settings
-// Set_Tile LO Word
+// Load Tile (Top Left To Bottom Right)
+#define rdp_load_tile( sl, tl, sh, th, tile ) \
+  0x34000000 | ((int)((float)(sl) * 4.0) & 0xFFF) << 12 | ((int)((float)(tl) * 4.0) & 0xFFF), \
+  (uint8_t)(tile) << 24 | ((int)((float)(sh) * 4.0) & 0xFFF) << 12 | ((int)((float)(th) * 4.0) & 0xFFF) \
+
+// Set Tile LO Word
 #define SHIFT_S_0 0x0 // Set_Tile: Shift 0 Level Of Detail Shift For S Addresses (Bit 0..3)
 #define SHIFT_S_1 0x1 // Set_Tile: Shift 1 Level Of Detail Shift For S Addresses (Bit 0..3)
 #define SHIFT_S_2 0x2 // Set_Tile: Shift 2 Level Of Detail Shift For S Addresses (Bit 0..3)
@@ -397,7 +448,7 @@
 #define PALETTE_D 0xD // Set_Tile: Palette Number D For 4Bit Color Indexed Texels, This Number Is The MS 4Bits Of An 8Bit Index (Bit 20..23)
 #define PALETTE_E 0xE // Set_Tile: Palette Number E For 4Bit Color Indexed Texels, This Number Is The MS 4Bits Of An 8Bit Index (Bit 20..23)
 #define PALETTE_F 0xF // Set_Tile: Palette Number F For 4Bit Color Indexed Texels, This Number Is The MS 4Bits Of An 8Bit Index (Bit 20..23)
-// Set_Tile/Set_Texture_Image/Set_Color_Image HI Word
+// Set Tile/Set Texture Image/Set Color Image HI Word
 #define SIZE_OF_PIXEL_4B 0  // Set_Tile/Set_Texture_Image/Set_Color_Image: Size Of Pixel/Texel Color Element 4B (Bit 51..52)
 #define SIZE_OF_PIXEL_8B 1  // Set_Tile/Set_Texture_Image/Set_Color_Image: Size Of Pixel/Texel Color Element 8B (Bit 51..52)
 #define SIZE_OF_PIXEL_16B 2 // Set_Tile/Set_Texture_Image/Set_Color_Image: Size Of Pixel/Texel Color Element 16B (Bit 51..52)
@@ -408,32 +459,63 @@
 #define IMAGE_DATA_FORMAT_IA 3         // Set_Tile/Set_Texture_Image/Set_Color_Image: Image Data Format IA (Bit 53..55)
 #define IMAGE_DATA_FORMAT_I 4          // Set_Tile/Set_Texture_Image/Set_Color_Image: Image Data Format I (Bit 53..55)
 
-// Fill_Rectangle: xl,yl,xh,yh
-// Word: Bottom Right X/Y, Top Left X/Y (Fixed Point 10.2)
+// Set Tile (Command Format)
+#define rdp_set_tile( format, size, line, tmem, tile, palette, ct, mt, maskt, shiftt, cs, ms, masks, shifts ) \
+  0x35000000 | (uint8_t)(format) << 21 | (uint8_t)(size) << 19 | (uint16_t)(line) << 9 | (uint16_t)(tmem), \
+  (uint8_t)(tile) << 24 | (uint8_t)(palette) << 20 | (uint8_t)(ct) << 19 | (uint8_t)(mt) << 18 | (uint8_t)(maskt) << 14 | (uint8_t)(shiftt) << 10 | (uint8_t)(cs) << 9 | (uint8_t)(ms) << 8 | (uint8_t)(masks) << 4 | (uint8_t)(shifts) \
 
-// Set_Fill_Color: Set The Filling Color
-// Word: Packed Color: If The Color Image Was Set BE 16B RGBA, Then The Fill Color Would Be Two Horizontally Adjacent 16B RGBA Pixels
+// Fill Rectangle (Top Left To Bottom Right)
+#define rdp_fill_rectangle( xh, yh, xl, yl ) \
+  0x36000000 | ((int)((float)(xl) * 4.0) & 0xFFF) << 12 | ((int)((float)(yl) * 4.0) & 0xFFF), \
+  ((int)((float)(xh) * 4.0) & 0xFFF) << 12 | ((int)((float)(yh) * 4.0) & 0xFFF) \
 
-// Set_Fog_Color: Set The Fog Color
-// Word: RGBA Color Components
+// Set Fill Color 16-Bit (R,G,B,A)
+#define rdp_set_fill_color_16( r, g, b, a ) \
+  0x37000000, \
+  ((uint8_t)(r) >> 3) << 27 | ((uint8_t)(g) >> 3) << 22 | ((uint8_t)(b) >> 3) << 17 | ((uint8_t)(a) >> 7) << 16 \
+  | ((uint8_t)(r) >> 3) << 11 | ((uint8_t)(g) >> 3) << 6 | ((uint8_t)(b) >> 3) << 1 | ((uint8_t)(a) >> 7) \
 
-// Set_Blend_Color: Set The Blending Color
-// Word: RGBA Color Components
+// Set Fill Color 32-Bit (R,G,B,A)
+#define rdp_set_fill_color_32( r, g, b, a ) \
+  0x37000000, \
+  ((uint8_t)(r) << 24) | ((uint8_t)(g) << 16) | ((uint8_t)(b) << 8) | (uint8_t)(a) \
 
-// Set_Prim_Color: minlev,levfrac,lo ; Set The Primitive Color
-// Word: Prim Min Level: Minimum Clamp For LOD Fraction When In Detail Or Sharpen Texture Modes (Fixed Point 0.5), Prim Level Frac: Level Of Detail Fraction For Primitive, Used Primarily In Multi-Tile Operations For Rectangle Primitives (Fixed Point 0.8), RGBA Color Components
+// Set Fog Color (R,G,B,A)
+#define rdp_set_fog_color( r, g, b, a ) \
+  0x38000000, \
+  (uint8_t)(r) << 24 | (uint8_t)(g) << 16 | (uint8_t)(b) << 8 | (uint8_t)(a) \
 
-// Set_Env_Color: Set The Environment Color
-// Word: RGBA Color Components
+// Set Blend Color (R,G,B,A)
+#define rdp_set_blend_color( r, g, b, a ) \
+  0x39000000, \
+  (uint8_t)(r) << 24 | (uint8_t)(g) << 16 | (uint8_t)(b) << 8 | (uint8_t)(a) \
 
-// Set_Combine_Mode: sub_aR0, mulR0, sub_aA0, mulA0, sub_aR1, mulR1, sub_bR0, sub_bR1, sub_aA1, mulA1, addR0, sub_bA0, addA0, addR1, sub_bA1, addA1 ; Set The Combine Mode
-// Word: SUB_A, Multiply Input RGB Components CYCLE 0, SUB_A, Multiply Input ALPHA Components CYCLE 0, SUB_A, Multiply Input RGB Components CYCLE 1, SUB_B, Multiply Input RGB Components CYCLE 0, SUB_B, Multiply Input RGB Components CYCLE 1, SUB_A, Multiply Input ALPHA Components CYCLE 1, Adder Input RGB Components CYCLE 0, SUB_B Input ALPHA Components CYCLE 0, Adder Input ALPHA Components CYCLE 0, Adder Input RGB Components CYCLE 1, SUB_B Input ALPHA Components CYCLE 1, Adder Input ALPHA Components CYCLE 1
+// Set Primitive Color (R,G,B,A)
+#define rdp_set_prim_color( r, g, b, a ) \
+  0x3A000000, \
+  (uint8_t)(r) << 24 | (uint8_t)(g) << 16 | (uint8_t)(b) << 8 | (uint8_t)(a) \
 
-// Set_Texture_Image: Set The Texture Image
-// Word: Image Data Format, Size Of Pixel/Texel Color Element, Width Of Image In Pixels - 1, Base Address (Top Left Corner) Of Image In DRAM
+// Set Environment Color (R,G,B,A)
+#define rdp_set_env_color( r, g, b, a ) \
+  0x3B000000, \
+  (uint8_t)(r) << 24 | (uint8_t)(g) << 16 | (uint8_t)(b) << 8 | (uint8_t)(a) \
 
-// Set_Z_Image: Set The Z Buffer Image
-// Word: Base Address (Top Left Corner) Of Image In DRAM, In Bytes
+// Set Combine Mode
+#define rdp_set_combine_mode( sub_a_r0, mul_r0, sub_a_a0, mul_a0, sub_a_r1, mul_r1, sub_b_r0, sub_b_r1, sub_a_a1, mul_a1, add_r0, sub_b_a0, add_a0, add_r1, sub_b_a1, add_a1 ) \
+  0x3C000000 | (uint8_t)(sub_a_r0) << 20 | (uint8_t)(mul_r0) << 15 | (uint8_t)(sub_a_a0) << 12 | (uint8_t)(mul_a0) << 9 | (uint8_t)(sub_a_r1) << 5 | (uint8_t)(mul_r1), \
+  (uint8_t)(sub_b_r0) << 28 | (uint8_t)(sub_b_r1) << 24 | (uint8_t)(sub_a_a1) << 21 | (uint8_t)(mul_a1) << 18 | (uint8_t)(add_r0) << 15 | (uint8_t)(sub_b_a0) << 12 | (uint8_t)(add_a0) << 9 | (uint8_t)(add_r1) << 6 | (uint8_t)(sub_b_a1) << 3 | (uint8_t)(add_a1) \
 
-// Set_Color_Image: Set The Color Image
-// Word: Image Data Format, Size Of Pixel/Texel Color Element, Width Of Image In Pixels: Image Width=Width+1, Base Address (Top Left Corner) Of Image In DRAM
+// Set Texture Image
+#define rdp_set_texture_image( format, size, width, address ) \
+  0x3D000000 | (uint8_t)(format) << 21 | (uint8_t)(size) << 19 | ((uint16_t)(width) - 1), \
+  (uint32_t)(address) \
+
+// Set Z Image
+#define rdp_set_z_image( address ) \
+  0x3E000000, \
+  (uint32_t)(address) \
+
+// Set Color Image
+#define rdp_set_color_image( format, size, width, address ) \
+  0x3F000000 | (uint8_t)(format) << 21 | (uint8_t)(size) << 19 | ((uint16_t)(width) - 1), \
+  (uint32_t)(address) \

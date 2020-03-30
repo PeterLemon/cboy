@@ -22,8 +22,7 @@
 #include "cpu.h"
 #include <os/fbtext.h>
 #include <rcp/vi.h>
-
-#include "rdp.c"
+#include "rdp.h"
 
 static pixel_t pixmem[160*144] __attribute__((aligned(16)));
 static pixel_t colormem[160*144] __attribute__((aligned(16)));
@@ -433,7 +432,7 @@ void vid_render_line()
 static const vi_state_t vi_state = {
   0x00003202, // status
   0x00200000, // origin
-  0x00000140, // width
+  0x000000A0, // width
   0x00000002, // intr
   0x00000000, // current
   0x03E52239, // burst
@@ -443,8 +442,8 @@ static const vi_state_t vi_state = {
   0x006C02EC, // h_start
   0x002501FF, // v_start
   0x000E0204, // v_burst
-  0x00000200, // x_scale
-  0x00000400, // y_scale
+  0x00000100, // x_scale
+  0x00000266, // y_scale
 };
 
 struct libn64_fbtext_context fbtext;
@@ -454,23 +453,91 @@ void vid_init()
   DPC.STATUS = 1; // Clear XBUS Bit To Enable RDP On CPU
 
   // Setup RDP buffer
-  rdp_start = memory_pos;
-  rdp_set_scissor(80.0,48.0, 240.0,196.0, SCISSOR_FIELD_DISABLE,SCISSOR_EVEN); // Set Scissor: XH,YH, XL,YL, Scissor Field Enable,Field
-  rdp_set_color_image(IMAGE_DATA_FORMAT_RGBA,SIZE_OF_PIXEL_16B, 320, vi_state.origin); // Set Color Image: Format,Size, Width, DRAM Address
-  rdp_set_other_modes(CYCLE_TYPE_COPY|ALPHA_DITHER_SEL_NO_DITHER|RGB_DITHER_SEL_NO_DITHER); // Set Other Modes
-  for( int i=0; i<12; ++i ) {
-    rdp_set_texture_image(IMAGE_DATA_FORMAT_RGBA, SIZE_OF_PIXEL_16B, 160, (uint32_t)pixmem+(3840*i)); // Set Texture Image: Format,Size, Width, DRAM Address
-    rdp_set_tile(IMAGE_DATA_FORMAT_RGBA, SIZE_OF_PIXEL_16B, 40, 0x000, 0,0, 0,0,0,0, 0,0,0,0); // Set Tile: Format,Size, Tile Line Size, TMEM Address, Tile,Palette, CT,MT,MaskT,ShiftT, CS,MS,MaskS,ShiftS
-    rdp_load_tile(0.0,0.0, 159.0,11.0, 0); // Load Tile: SL,TL, SH,TH, Tile
-    rdp_texture_rectangle(80.0,48.0+(i*12), 239.0,59.0+(i*12), 0.0,0.0, 4.0,1.0, 0); // Texture Rectangle: XH,YH, XL,YL, S,T, DSDX,DTDY, Tile
-    rdp_sync_tile(); // Sync Tile
-  }
-  rdp_sync_full(); // Ensure Entire Scene Is Fully Drawn
-  rdp_end = memory_pos;
+  static uint32_t dp_list[] __attribute__((aligned(64))) = { // Draw screen in 160x12 texture rectangle strips
+    rdp_set_scissor(0.0,0.0, 160.0,144.0, SCISSOR_FIELD_DISABLE,SCISSOR_EVEN), // Set Scissor: XH,YH, XL,YL, Scissor Field Enable,Field
+    rdp_set_color_image(IMAGE_DATA_FORMAT_RGBA,SIZE_OF_PIXEL_16B, 160, vi_state.origin), // Set Color Image: Format,Size, Width, DRAM Address
+    rdp_set_other_modes(CYCLE_TYPE_COPY|ALPHA_DITHER_SEL_NO_DITHER|RGB_DITHER_SEL_NO_DITHER), // Set Other Modes
+
+    rdp_set_texture_image(IMAGE_DATA_FORMAT_RGBA, SIZE_OF_PIXEL_16B, 160, (uint32_t)pixmem), // Set Texture Image: Format,Size, Width, DRAM Address
+    rdp_set_tile(IMAGE_DATA_FORMAT_RGBA, SIZE_OF_PIXEL_16B, 40, 0x000, 0,0, 0,0,0,0, 0,0,0,0), // Set Tile: Format,Size, Tile Line Size, TMEM Address, Tile,Palette, CT,MT,MaskT,ShiftT, CS,MS,MaskS,ShiftS
+    rdp_load_tile(0.0,0.0, 159.0,11.0, 0), // Load Tile: SL,TL, SH,TH, Tile
+    rdp_texture_rectangle(0.0,0.0, 159.0,11.0, 0.0,0.0, 4.0,1.0, 0), // Texture Rectangle: XH,YH, XL,YL, S,T, DSDX,DTDY, Tile
+
+    rdp_sync_tile, // Sync Tile
+    rdp_set_texture_image(IMAGE_DATA_FORMAT_RGBA, SIZE_OF_PIXEL_16B, 160, (uint32_t)pixmem+3840), // Set Texture Image: Format,Size, Width, DRAM Address
+    rdp_set_tile(IMAGE_DATA_FORMAT_RGBA, SIZE_OF_PIXEL_16B, 40, 0x000, 0,0, 0,0,0,0, 0,0,0,0), // Set Tile: Format,Size, Tile Line Size, TMEM Address, Tile,Palette, CT,MT,MaskT,ShiftT, CS,MS,MaskS,ShiftS
+    rdp_load_tile(0.0,0.0, 159.0,11.0, 0), // Load Tile: SL,TL, SH,TH, Tile
+    rdp_texture_rectangle(0.0,12.0, 159.0,23.0, 0.0,0.0, 4.0,1.0, 0), // Texture Rectangle: XH,YH, XL,YL, S,T, DSDX,DTDY, Tile
+
+    rdp_sync_tile, // Sync Tile
+    rdp_set_texture_image(IMAGE_DATA_FORMAT_RGBA, SIZE_OF_PIXEL_16B, 160, (uint32_t)pixmem+7680), // Set Texture Image: Format,Size, Width, DRAM Address
+    rdp_set_tile(IMAGE_DATA_FORMAT_RGBA, SIZE_OF_PIXEL_16B, 40, 0x000, 0,0, 0,0,0,0, 0,0,0,0), // Set Tile: Format,Size, Tile Line Size, TMEM Address, Tile,Palette, CT,MT,MaskT,ShiftT, CS,MS,MaskS,ShiftS
+    rdp_load_tile(0.0,0.0, 159.0,11.0, 0), // Load Tile: SL,TL, SH,TH, Tile
+    rdp_texture_rectangle(0.0,24.0, 159.0,35.0, 0.0,0.0, 4.0,1.0, 0), // Texture Rectangle: XH,YH, XL,YL, S,T, DSDX,DTDY, Tile
+
+    rdp_sync_tile, // Sync Tile
+    rdp_set_texture_image(IMAGE_DATA_FORMAT_RGBA, SIZE_OF_PIXEL_16B, 160, (uint32_t)pixmem+11520), // Set Texture Image: Format,Size, Width, DRAM Address
+    rdp_set_tile(IMAGE_DATA_FORMAT_RGBA, SIZE_OF_PIXEL_16B, 40, 0x000, 0,0, 0,0,0,0, 0,0,0,0), // Set Tile: Format,Size, Tile Line Size, TMEM Address, Tile,Palette, CT,MT,MaskT,ShiftT, CS,MS,MaskS,ShiftS
+    rdp_load_tile(0.0,0.0, 159.0,11.0, 0), // Load Tile: SL,TL, SH,TH, Tile
+    rdp_texture_rectangle(0.0,36.0, 159.0,47.0, 0.0,0.0, 4.0,1.0, 0), // Texture Rectangle: XH,YH, XL,YL, S,T, DSDX,DTDY, Tile
+
+    rdp_sync_tile, // Sync Tile
+    rdp_set_texture_image(IMAGE_DATA_FORMAT_RGBA, SIZE_OF_PIXEL_16B, 160, (uint32_t)pixmem+15360), // Set Texture Image: Format,Size, Width, DRAM Address
+    rdp_set_tile(IMAGE_DATA_FORMAT_RGBA, SIZE_OF_PIXEL_16B, 40, 0x000, 0,0, 0,0,0,0, 0,0,0,0), // Set Tile: Format,Size, Tile Line Size, TMEM Address, Tile,Palette, CT,MT,MaskT,ShiftT, CS,MS,MaskS,ShiftS
+    rdp_load_tile(0.0,0.0, 159.0,11.0, 0), // Load Tile: SL,TL, SH,TH, Tile
+    rdp_texture_rectangle(0.0,48.0, 159.0,59.0, 0.0,0.0, 4.0,1.0, 0), // Texture Rectangle: XH,YH, XL,YL, S,T, DSDX,DTDY, Tile
+
+    rdp_sync_tile, // Sync Tile
+    rdp_set_texture_image(IMAGE_DATA_FORMAT_RGBA, SIZE_OF_PIXEL_16B, 160, (uint32_t)pixmem+19200), // Set Texture Image: Format,Size, Width, DRAM Address
+    rdp_set_tile(IMAGE_DATA_FORMAT_RGBA, SIZE_OF_PIXEL_16B, 40, 0x000, 0,0, 0,0,0,0, 0,0,0,0), // Set Tile: Format,Size, Tile Line Size, TMEM Address, Tile,Palette, CT,MT,MaskT,ShiftT, CS,MS,MaskS,ShiftS
+    rdp_load_tile(0.0,0.0, 159.0,11.0, 0), // Load Tile: SL,TL, SH,TH, Tile
+    rdp_texture_rectangle(0.0,60.0, 159.0,71.0, 0.0,0.0, 4.0,1.0, 0), // Texture Rectangle: XH,YH, XL,YL, S,T, DSDX,DTDY, Tile
+
+    rdp_sync_tile, // Sync Tile
+    rdp_set_texture_image(IMAGE_DATA_FORMAT_RGBA, SIZE_OF_PIXEL_16B, 160, (uint32_t)pixmem+23040), // Set Texture Image: Format,Size, Width, DRAM Address
+    rdp_set_tile(IMAGE_DATA_FORMAT_RGBA, SIZE_OF_PIXEL_16B, 40, 0x000, 0,0, 0,0,0,0, 0,0,0,0), // Set Tile: Format,Size, Tile Line Size, TMEM Address, Tile,Palette, CT,MT,MaskT,ShiftT, CS,MS,MaskS,ShiftS
+    rdp_load_tile(0.0,0.0, 159.0,11.0, 0), // Load Tile: SL,TL, SH,TH, Tile
+    rdp_texture_rectangle(0.0,72.0, 159.0,83.0, 0.0,0.0, 4.0,1.0, 0), // Texture Rectangle: XH,YH, XL,YL, S,T, DSDX,DTDY, Tile
+
+    rdp_sync_tile, // Sync Tile
+    rdp_set_texture_image(IMAGE_DATA_FORMAT_RGBA, SIZE_OF_PIXEL_16B, 160, (uint32_t)pixmem+26880), // Set Texture Image: Format,Size, Width, DRAM Address
+    rdp_set_tile(IMAGE_DATA_FORMAT_RGBA, SIZE_OF_PIXEL_16B, 40, 0x000, 0,0, 0,0,0,0, 0,0,0,0), // Set Tile: Format,Size, Tile Line Size, TMEM Address, Tile,Palette, CT,MT,MaskT,ShiftT, CS,MS,MaskS,ShiftS
+    rdp_load_tile(0.0,0.0, 159.0,11.0, 0), // Load Tile: SL,TL, SH,TH, Tile
+    rdp_texture_rectangle(0.0,84.0, 159.0,95.0, 0.0,0.0, 4.0,1.0, 0), // Texture Rectangle: XH,YH, XL,YL, S,T, DSDX,DTDY, Tile
+
+    rdp_sync_tile, // Sync Tile
+    rdp_set_texture_image(IMAGE_DATA_FORMAT_RGBA, SIZE_OF_PIXEL_16B, 160, (uint32_t)pixmem+30720), // Set Texture Image: Format,Size, Width, DRAM Address
+    rdp_set_tile(IMAGE_DATA_FORMAT_RGBA, SIZE_OF_PIXEL_16B, 40, 0x000, 0,0, 0,0,0,0, 0,0,0,0), // Set Tile: Format,Size, Tile Line Size, TMEM Address, Tile,Palette, CT,MT,MaskT,ShiftT, CS,MS,MaskS,ShiftS
+    rdp_load_tile(0.0,0.0, 159.0,11.0, 0), // Load Tile: SL,TL, SH,TH, Tile
+    rdp_texture_rectangle(0.0,96.0, 159.0,107.0, 0.0,0.0, 4.0,1.0, 0), // Texture Rectangle: XH,YH, XL,YL, S,T, DSDX,DTDY, Tile
+
+    rdp_sync_tile, // Sync Tile
+    rdp_set_texture_image(IMAGE_DATA_FORMAT_RGBA, SIZE_OF_PIXEL_16B, 160, (uint32_t)pixmem+34560), // Set Texture Image: Format,Size, Width, DRAM Address
+    rdp_set_tile(IMAGE_DATA_FORMAT_RGBA, SIZE_OF_PIXEL_16B, 40, 0x000, 0,0, 0,0,0,0, 0,0,0,0), // Set Tile: Format,Size, Tile Line Size, TMEM Address, Tile,Palette, CT,MT,MaskT,ShiftT, CS,MS,MaskS,ShiftS
+    rdp_load_tile(0.0,0.0, 159.0,11.0, 0), // Load Tile: SL,TL, SH,TH, Tile
+    rdp_texture_rectangle(0.0,108.0, 159.0,119.0, 0.0,0.0, 4.0,1.0, 0), // Texture Rectangle: XH,YH, XL,YL, S,T, DSDX,DTDY, Tile
+
+    rdp_sync_tile, // Sync Tile
+    rdp_set_texture_image(IMAGE_DATA_FORMAT_RGBA, SIZE_OF_PIXEL_16B, 160, (uint32_t)pixmem+38400), // Set Texture Image: Format,Size, Width, DRAM Address
+    rdp_set_tile(IMAGE_DATA_FORMAT_RGBA, SIZE_OF_PIXEL_16B, 40, 0x000, 0,0, 0,0,0,0, 0,0,0,0), // Set Tile: Format,Size, Tile Line Size, TMEM Address, Tile,Palette, CT,MT,MaskT,ShiftT, CS,MS,MaskS,ShiftS
+    rdp_load_tile(0.0,0.0, 159.0,11.0, 0), // Load Tile: SL,TL, SH,TH, Tile
+    rdp_texture_rectangle(0.0,120.0, 159.0,131.0, 0.0,0.0, 4.0,1.0, 0), // Texture Rectangle: XH,YH, XL,YL, S,T, DSDX,DTDY, Tile
+
+    rdp_sync_tile, // Sync Tile
+    rdp_set_texture_image(IMAGE_DATA_FORMAT_RGBA, SIZE_OF_PIXEL_16B, 160, (uint32_t)pixmem+42240), // Set Texture Image: Format,Size, Width, DRAM Address
+    rdp_set_tile(IMAGE_DATA_FORMAT_RGBA, SIZE_OF_PIXEL_16B, 40, 0x000, 0,0, 0,0,0,0, 0,0,0,0), // Set Tile: Format,Size, Tile Line Size, TMEM Address, Tile,Palette, CT,MT,MaskT,ShiftT, CS,MS,MaskS,ShiftS
+    rdp_load_tile(0.0,0.0, 159.0,11.0, 0), // Load Tile: SL,TL, SH,TH, Tile
+    rdp_texture_rectangle(0.0,132.0, 159.0,143.0, 0.0,0.0, 4.0,1.0, 0), // Texture Rectangle: XH,YH, XL,YL, S,T, DSDX,DTDY, Tile
+
+    rdp_sync_full // Ensure Entire Scene Is Fully Drawn
+  };
+
+  rdp_start = (uint32_t)dp_list;
+  rdp_end = (uint32_t)dp_list + sizeof(dp_list);
 
   vi_flush_state(&vi_state);
 
-  for (unsigned i = 0; i < 320 * 240 * 2; i += 16) {
+  for (unsigned i = 0; i < 160 * 144 * 2; i += 16) {
     __asm__ __volatile__(
       ".set gp=64\n\t"
       "cache 0xD, 0x0(%0)\n\t"
@@ -483,19 +550,11 @@ void vid_init()
       : "memory"
     );
   }
-
-  libn64_fbtext_init(&fbtext, vi_state.origin, LIBN64_FBTEXT_COLOR_WHITE,
-      LIBN64_FBTEXT_COLOR_BLACK, 0x140, LIBN64_FBTEXT_16BPP);
-
-  fbtext.x = 14; fbtext.y = 1;
-  libn64_fbtext_puts(&fbtext, "cboy by jrra\n");
-  fbtext.x = 3; fbtext.y = 13;
-  libn64_fbtext_puts(&fbtext, "n64chain port by marathonm & krom\n");
 }
 
 void vid_waitForNextFrame()
 {
-  while(VI.V_CURRENT_LINE != 0x180); // Wait For VSync
+  while(VI.V_CURRENT_LINE != 144); // Wait For VSync
 }
 
 void vid_frame()

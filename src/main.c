@@ -28,33 +28,37 @@
 #include "libc.h"
 
 int pause = 0;
+//int skip = 0;
+//#define skip_amount 2
 
 __attribute__((hot)) __attribute__((noinline))
 static void spin() {
   while (1) {
-        vid_waitForNextFrame();
-        input_handle();
-        if( !pause )
-        {
-            cpu_do_one_frame();
-            vid_frame();
-            audio_frame();
-        }
+    vid_waitForNextFrame();
+    input_handle();
+    if( !pause )
+    {
+      cpu_do_one_frame();
+      //skip++;
+      //if (skip % skip_amount) {
+        vid_frame();
+        audio_frame();
+      //}
+    }
   }
 }
 
 __attribute__((cold))
 void main() {
-    mem_init();
-    audio_init();
-    if( !cpu_init() )
-    {
-        return;
-    }
-    cart_init();
-    vid_init();
-    input_init();
-    spin();
-    __builtin_unreachable();
+  mem_init();
+  audio_init();
+  if( !cpu_init() )
+  {
+      return;
+  }
+  cart_init();
+  vid_init();
+  input_init();
+  spin();
+  __builtin_unreachable();
 }
-
